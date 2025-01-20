@@ -10,7 +10,7 @@
   <maintainer email="youremail@example.com">Your Name</maintainer>
 
   <!-- License -->
-  <license>TODO</license>
+  <license>MIT</license> <!-- Update with your actual license -->
 
   <!-- Build tool dependencies -->
   <buildtool_depend>catkin</buildtool_depend>
@@ -19,8 +19,7 @@
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
   <depend>message_runtime</depend>
- <build_depend>ompl</build_depend>
-<exec_depend>ompl</exec_depend>
+  <depend>ompl</depend> <!-- Added OMPL as a dependency -->
 
   <!-- Testing dependencies -->
   <test_depend>rostest</test_depend>
