@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>rope_rrt</name>
+  <version>0.0.1</version>
+  <description>
+    A simple package for rope RRT algorithm.
+  </description>
+
+  <!-- Maintainer -->
+  <maintainer email="youremail@example.com">Your Name</maintainer>
+
+  <!-- License -->
+  <license>TODO</license>
+
+  <!-- Build tool dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- Dependencies -->
+  <depend>roscpp</depend>
+  <depend>std_msgs</depend>
+  <depend>message_runtime</depend>
+ <build_depend>ompl</build_depend>
+<exec_depend>ompl</exec_depend>
+
+  <!-- Testing dependencies -->
+  <test_depend>rostest</test_depend>
+</package>
