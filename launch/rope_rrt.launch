@@ -1,0 +1,7 @@
+<launch>
+    <!-- Launch the rope_rrt node -->
+    <node name="rope_rrt_node" pkg="rope_rrt" type="rope_rrt" output="screen">
+        <!-- Parameters for the node (if any) can be added here -->
+        <!-- <param name="parameter_name" value="value"/> -->
+    </node>
+</launch>

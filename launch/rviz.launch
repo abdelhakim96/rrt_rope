@@ -1,0 +1,4 @@
+<launch>
+    <!-- Launch RViz and load the custom configuration -->
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find rope_rrt)/rviz_config.rviz" required="true" />
+</launch>
