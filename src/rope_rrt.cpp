@@ -1,14 +1,69 @@
-#include <ros/ros.h>
-#include <visualization_msgs/Marker.h>
-#include <ompl/base/SpaceInformation.h>
-#include <ompl/base/ScopedState.h>
-#include <ompl/geometric/PathSimplifier.h>
-#include <ompl/geometric/PathGeometric.h>
-#include <ompl/base/spaces/RealVectorStateSpace.h>
-#include <vector>
-#include <cmath>
 
+#include <rope_rrt.hpp>
 // Structure to represent an obstacle as a sphere
+
+std::vector<double> current_att_quat(4, 0.0);  // Quaternion has 4 components
+std::vector<double> current_vel_rate(3, 0.0); // Velocity rate has 3 components
+std::vector<double> current_pos_att(3, 0.0);  // Position and attitude have 3 components
+bool new_data_received = false;
+std::vector<double> current_vel_body(3, 0.0); // Velocity body has 3 components
+std::vector<double> angles(3, 0.0);           // Angles have 3 components
+std::vector<double> angles_d(3, 0.0);         // Angles in degrees have 3 components
+
+
+
+
+void pos_cb(const nav_msgs::Odometry::ConstPtr &msg) {
+    current_att_quat = {
+        msg->pose.pose.orientation.x, msg->pose.pose.orientation.y, msg->pose.pose.orientation.z, msg->pose.pose.orientation.w};
+    current_vel_rate = {
+        msg->twist.twist.linear.x,
+        msg->twist.twist.linear.y,
+        msg->twist.twist.linear.z,
+        msg->twist.twist.angular.x,
+        msg->twist.twist.angular.y,
+        msg->twist.twist.angular.z};
+    current_pos_att = {
+        msg->pose.pose.position.x, msg->pose.pose.position.y, msg->pose.pose.position.z, 0.0, 0.0, 0.0}; // roll, pitch, yaw can be computed
+    new_data_received = true;
+}
+
+void vel_cb(const geometry_msgs::TwistStamped::ConstPtr &msg) {
+    current_vel_body = {
+        msg->twist.linear.x,
+        msg->twist.linear.y,
+        msg->twist.linear.z,
+        msg->twist.angular.x,
+        msg->twist.angular.y,
+        msg->twist.angular.z};
+}
+
+void orientation_cb(const geometry_msgs::Vector3Stamped::ConstPtr &msg) {
+    angles = {msg->vector.x * (M_PI / 180),
+              msg->vector.y * (M_PI / 180),
+              msg->vector.z * (M_PI / 180)};
+    angles_d = {msg->vector.x, msg->vector.y, msg->vector.z};
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 struct Obstacle
 {
     std::vector<double> center; // Center of the obstacle
@@ -41,6 +96,68 @@ bool isStateValid(const ompl::base::State *state)
 
     return true; // State is valid
 }
+
+// Custom motion validator class
+class myMotionValidator : public ompl::base::MotionValidator
+{
+public:
+    myMotionValidator(const ompl::base::SpaceInformationPtr &si) : ompl::base::MotionValidator(si) {}
+
+    bool checkMotion(const ompl::base::State *s1, const ompl::base::State *s2) const override
+    {
+        // Check if the start and end states are valid
+        if (!si_->isValid(s1) || !si_->isValid(s2))
+            return false;
+
+        // Interpolate between the states and check each intermediate state for validity
+        int nd = si_->getStateSpace()->validSegmentCount(s1, s2);
+        auto *interpolatedState = si_->allocState();
+
+        for (int i = 1; i < nd; ++i)
+        {
+            si_->getStateSpace()->interpolate(s1, s2, (double)i / (double)nd, interpolatedState);
+            if (!si_->isValid(interpolatedState))
+            {
+                si_->freeState(interpolatedState);
+                return false;
+            }
+        }
+
+        si_->freeState(interpolatedState);
+        return true;
+    }
+
+    bool checkMotion(const ompl::base::State *s1, const ompl::base::State *s2, std::pair<ompl::base::State *, double> &lastValid) const override
+    {
+        // Check if the start state is valid
+        if (!si_->isValid(s1))
+        {
+            lastValid.first = si_->cloneState(s1);
+            lastValid.second = 0.0;
+            return false;
+        }
+
+        // Interpolate between the states and check each intermediate state for validity
+        int nd = si_->getStateSpace()->validSegmentCount(s1, s2);
+        auto *interpolatedState = si_->allocState();
+
+        for (int i = 1; i < nd; ++i)
+        {
+            si_->getStateSpace()->interpolate(s1, s2, (double)i / (double)nd, interpolatedState);
+            if (!si_->isValid(interpolatedState))
+            {
+                lastValid.first = si_->cloneState(interpolatedState);
+                lastValid.second = (double)(i - 1) / (double)nd;
+                si_->freeState(interpolatedState);
+                return false;
+            }
+        }
+
+        si_->freeState(interpolatedState);
+        lastValid.second = 1.0;
+        return true;
+    }
+};
 
 // Function to create and publish a path
 void publishPath(ros::Publisher &pub, const ompl::geometric::PathGeometric &path, const std::string &frame_id, const std::string &ns, const std_msgs::ColorRGBA &color)
@@ -80,9 +197,6 @@ void publishObstacles(ros::Publisher &obstacle_pub, const std::vector<Obstacle> 
     marker.type = visualization_msgs::Marker::SPHERE_LIST;
     marker.action = visualization_msgs::Marker::ADD;
     marker.color.r = 1.0f;  // Red
-    marker.color.b = 1.0f;  // Red
-    marker.color.g = 1.0f;  // Red
-
     marker.color.a = 0.5;
 
     for (const auto &obstacle : obstacles)
@@ -105,9 +219,6 @@ void publishObstacles(ros::Publisher &obstacle_pub, const std::vector<Obstacle> 
         sphere.scale.y = obstacle.radius * 2;
         sphere.scale.z = obstacle.radius * 2;
         sphere.color.r = 1.0f;  // Red
-        sphere.color.g = 1.0f;  // Red
-        sphere.color.b = 1.0f;  // Red
-
         sphere.color.a = 0.5;
         sphere.pose.position = p;
 
@@ -122,59 +233,135 @@ int main(int argc, char **argv)
     // Initialize ROS node
     ros::init(argc, argv, "rope_shortcut_path_example");
     ros::NodeHandle nh;
-
+    ros::Time ros_time; 
+    int count = 0;
     // Create publishers to visualize the original and optimized paths, and obstacles
     ros::Publisher rov_path_pub = nh.advertise<visualization_msgs::Marker>("rov_path", 10);
     ros::Publisher rope_path_pub = nh.advertise<visualization_msgs::Marker>("rope_path", 10);
-    ros::Publisher obstacle_pub = nh.advertise<visualization_msgs::Marker>("obstacles", 10);
+    ros::Publisher obstacle_pub = nh.advertise<visualization_msgs::Marker>("obstacle", 10);
+
+
+    //subscribers
+    ros::Subscriber pos_sub = nh.subscribe<nav_msgs::Odometry>("/mobula/rov/odometry", 1, pos_cb);
+    ros::Subscriber orientation_sub = nh.subscribe<geometry_msgs::Vector3Stamped>("/mobula/rov/orientation", 1, orientation_cb);
 
     // Define obstacles (center and radius)
-    obstacles.emplace_back(std::vector<double>{0.0, 0.0, 0.0}, 2.0);  // Obstacle at (0, 2.5, 0) with radius 1
+    ros_time = ros::Time::now();
+
+
 
     ros::Rate rate(2);
+   auto space = std::make_shared<ompl::base::RealVectorStateSpace>(3);
+        ompl::base::RealVectorBounds bounds(3);
+        bounds.setLow(-10);
+        bounds.setHigh(15);
+        space->setBounds(bounds);
+        
+       // Create space information and set the state validity checker
+        auto si = std::make_shared<ompl::base::SpaceInformation>(space);
+        si->setStateValidityChecker(isStateValid);
 
+        // Set the custom motion validator
+        si->setMotionValidator(std::make_shared<myMotionValidator>(si));
+        si->setup();
+
+        // Define a geometric path in the space (Semi-Circular Path)
+        ompl::geometric::PathGeometric path1(si);
+        ompl::geometric::PathGeometric path2(si);
     while (ros::ok())
     {
+
+        double o_radius = 2 * cos(0.2  * count);
+        count++;
+        //ROS_ERROR("TIME: %d", count);
+        //ROS_ERROR("Radius: %f", o_radius);
+        // Ensure the obstacles vector has at least one element
+        if (obstacles.empty()) {
+            obstacles.emplace_back(std::vector<double>{0.0, 0.0, 0.0}, 1.0);  // Initial obstacle
+        }
+        double pos_x = 0.0;
+        double pos_y = 2 * cos(0.2  * count);
+        double pos_z = 1 * sin(0.2  * count);
+        o_radius = 1.0;
+        pos_y = -0.0;
+        pos_z = 0.0; 
+        // Update the first obstacle
+        obstacles[0] = Obstacle(std::vector<double>{pos_x, pos_y, pos_z}, o_radius);  // Update the first obstacle
+
         // Define a 3D state space
         auto space = std::make_shared<ompl::base::RealVectorStateSpace>(3);
         ompl::base::RealVectorBounds bounds(3);
         bounds.setLow(-10);
         bounds.setHigh(15);
         space->setBounds(bounds);
-
-        // Create space information and set the state validity checker
-        auto si = std::make_shared<ompl::base::SpaceInformation>(space);
-        si->setStateValidityChecker(isStateValid);
-
-        // Define a geometric path in the space (Semi-Circular Path)
-        ompl::geometric::PathGeometric path(si);
-        int num_points = 50;  // Number of points for the semi-circle
-        double radius = 5.0;
+        
+ 
+        int num_points = 10;  // Number of points for the semi-circle
+        double radius = 3.0;
+        
+        //current_pos_att
+        
+        double rotation_angle = 20.0 * cos(0.2 * 0.0);  // Rotation amount
+     if (count<2){
         for (int i = 0; i <= num_points; ++i)
         {
-            double angle = M_PI * i / num_points;  // Semi-circle from 0 to π
+            double angle = 3 * M_PI_2 * i / num_points;  // Three-quarters of a circle from 0 to 3π/2
+
+            // Rotation about z-axis
             auto *state = si->allocState()->as<ompl::base::RealVectorStateSpace::StateType>();
-            state->values[0] = radius * cos(angle);  // x-coordinate
-            state->values[1] = radius * sin(angle);  // y-coordinate
-            state->values[2] = 0;                    // z-coordinate (keeping it flat)
-            path.append(state);
+            state->values[0] = radius * cos(angle) * cos(rotation_angle) - radius * sin(angle) * sin(rotation_angle);  // x-coordinate
+            state->values[1] = radius * cos(angle) * sin(rotation_angle) + radius * sin(angle) * cos(rotation_angle);  // y-coordinate
+            state->values[2] = 0;  // z-coordinate (keeping it flat)
+            path1.append(state);
         }
+     }
+        
+        //path.clear();  // Clear the existing path
+       si->setStateValidityChecker(isStateValid);
+
+        // Set the custom motion validator
+        si->setMotionValidator(std::make_shared<myMotionValidator>(si));
+        si->setup();
+
+        // Define a geometric path in the space (Semi-Circular Path)
+        //path(si);
+
+        //auto *state = si->allocState()->as<ompl::base::RealVectorStateSpace::StateType>();
+       // state->values[0] = current_pos_att[0];  // x-coordinate
+       // state->values[1] = current_pos_att[1];  // y-coordinate
+       // state->values[2] = current_pos_att[2];  // z-coordinate (keeping it flat)
+       // path1.append(state);
 
         // Publish the original path
-        ROS_INFO("Publishing original path...");
+        //ROS_INFO("Publishing original path...");
         std_msgs::ColorRGBA rovpathColor;
         rovpathColor.r = 0.0f;  // Red
         rovpathColor.g = 0.0f;  // Green
         rovpathColor.b = 1.0f;  // Blue
         rovpathColor.a = 1.0f;  // Alpha (transparency)
-        publishPath(rov_path_pub, path, "world", "rov_path", rovpathColor);
+        publishPath(rov_path_pub, path1, "world", "rov_path", rovpathColor);
 
         // Simplify the path using ropeShortcutPath (Optimized Path)
         ompl::geometric::PathSimplifier simplifier(si);
-        double delta = 1;                // Step size
+        double delta = 0.1;                // Step size
         double equivalenceTolerance = 0.5;  // Equivalence tolerance
-        ROS_INFO("Applying ropeShortcutPath...");
-        bool improved = simplifier.ropeShortcutPath(path, delta, equivalenceTolerance);
+        //ROS_INFO("Applying ropeShortcutPath...");
+        bool improved;
+        //if (count<2){
+        path2 = path1;
+        improved = simplifier.ropeShortcutPath(path2, delta, equivalenceTolerance);
+       // }
+        // Check if the optimized path is valid
+        bool pathValid = true;
+        for (size_t i = 0; i < path1.getStateCount(); ++i)
+        {
+            if (!isStateValid(path1.getState(i)))
+            {
+                pathValid = false;
+                ROS_WARN("Optimized path goes through an obstacle at state %zu", i);
+                break;
+            }
+        }
 
         // Publish the optimized path
         ROS_INFO("Publishing optimized path...");
@@ -183,11 +370,15 @@ int main(int argc, char **argv)
         ropepathColor.g = 1.0f;  // Green
         ropepathColor.b = 0.0f;  // Blue
         ropepathColor.a = 1.0f;  // Alpha (transparency)
-        publishPath(rope_path_pub, path, "world", "rope_path", ropepathColor);
-
-        if (improved)
+        publishPath(rope_path_pub, path2, "world", "rope_path", ropepathColor);
+         
+        if (improved && pathValid)
         {
-            ROS_INFO("Path improved with ropeShortcutPath.");
+            ROS_INFO("Path improved with ropeShortcutPath and is valid.");
+        }
+        else if (improved)
+        {
+            ROS_WARN("Path improved with ropeShortcutPath but is not valid.");
         }
         else
         {
