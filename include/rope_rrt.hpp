@@ -12,7 +12,9 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <ros/package.h>  // Include the ROS package utility
-
+#include "ompl/base/SpaceInformation.h"
+#include <ompl/geometric/PathGeometric.h>
+#include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <tf/transform_datatypes.h>
 #include <tf/tf.h>
 #include <algorithm> // for std::clamp
@@ -28,8 +30,13 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
-
-
+#include <ompl/base/SpaceInformation.h>
+#include <ompl/base/ScopedState.h>
+#include <ompl/geometric/PathSimplifier.h>
+#include <ompl/geometric/PathGeometric.h>
+#include <ompl/base/spaces/RealVectorStateSpace.h>
+#include <nav_msgs/Path.h>
+#include <geometry_msgs/PoseStamped.h>
 
 extern std::vector<double> current_att_quat;
 extern std::vector<double> current_vel_rate;

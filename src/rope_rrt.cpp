@@ -159,6 +159,41 @@ public:
     }
 };
 
+
+
+
+
+void publishTetherPath(ros::Publisher &pub, const ompl::geometric::PathGeometric &path, const std::string &frame_id)
+{
+    nav_msgs::Path tether_path_msg;
+    tether_path_msg.header.frame_id = frame_id;
+    tether_path_msg.header.stamp = ros::Time::now();
+
+    for (size_t i = 0; i < path.getStateCount(); ++i)
+    {
+        const auto *state = path.getState(i)->as<ompl::base::RealVectorStateSpace::StateType>();
+        geometry_msgs::PoseStamped pose;
+        pose.header.frame_id = frame_id;
+        pose.header.stamp = ros::Time::now();  // Use current time
+        pose.pose.position.x = state->values[0];
+        pose.pose.position.y = state->values[1];
+        pose.pose.position.z = state->values[2];
+        pose.pose.orientation.w = 1.0;  // Default orientation (can be updated for full 6DOF path if needed)
+        tether_path_msg.poses.push_back(pose);
+    }
+
+    pub.publish(tether_path_msg);
+}
+
+
+
+
+
+
+
+
+
+
 // Function to create and publish a path
 void publishPath(ros::Publisher &pub, const ompl::geometric::PathGeometric &path, const std::string &frame_id, const std::string &ns, const std_msgs::ColorRGBA &color)
 {
@@ -169,8 +204,8 @@ void publishPath(ros::Publisher &pub, const ompl::geometric::PathGeometric &path
     marker.id = 0;
     marker.type = visualization_msgs::Marker::POINTS;
     marker.action = visualization_msgs::Marker::ADD;
-    marker.scale.x = 0.2;
-    marker.scale.y = 0.2;
+    marker.scale.x = 0.1;
+    marker.scale.y = 0.1;
     marker.color = color;  // Use the provided color
 
     for (size_t i = 0; i < path.getStateCount(); ++i)
@@ -239,6 +274,7 @@ int main(int argc, char **argv)
     ros::Publisher rov_path_pub = nh.advertise<visualization_msgs::Marker>("rov_path", 10);
     ros::Publisher rope_path_pub = nh.advertise<visualization_msgs::Marker>("rope_path", 10);
     ros::Publisher obstacle_pub = nh.advertise<visualization_msgs::Marker>("obstacle", 10);
+    ros::Publisher tether_path_pub = nh.advertise<nav_msgs::Path>("rope_rrt_tether_path", 10);
 
 
     //subscribers
@@ -250,7 +286,7 @@ int main(int argc, char **argv)
 
 
 
-    ros::Rate rate(2);
+    ros::Rate rate(1);
    auto space = std::make_shared<ompl::base::RealVectorStateSpace>(3);
         ompl::base::RealVectorBounds bounds(3);
         bounds.setLow(-10);
@@ -268,6 +304,9 @@ int main(int argc, char **argv)
         // Define a geometric path in the space (Semi-Circular Path)
         ompl::geometric::PathGeometric path1(si);
         ompl::geometric::PathGeometric path2(si);
+
+        std::vector<ompl::base::State *> contactPoints;
+
     while (ros::ok())
     {
 
@@ -278,15 +317,20 @@ int main(int argc, char **argv)
         // Ensure the obstacles vector has at least one element
         if (obstacles.empty()) {
             obstacles.emplace_back(std::vector<double>{0.0, 0.0, 0.0}, 1.0);  // Initial obstacle
+            
         }
-        double pos_x = 0.0;
+        double pos_x = -1.0;
         double pos_y = 2 * cos(0.2  * count);
         double pos_z = 1 * sin(0.2  * count);
-        o_radius = 1.0;
+        o_radius = 0.5;
         pos_y = -0.0;
         pos_z = 0.0; 
         // Update the first obstacle
-        obstacles[0] = Obstacle(std::vector<double>{pos_x, pos_y, pos_z}, o_radius);  // Update the first obstacle
+        obstacles[0] = Obstacle(std::vector<double>{pos_x, pos_y, pos_z+0.1}, o_radius);  // Update the first obstacle
+
+
+       obstacles.emplace_back(std::vector<double>{pos_x, pos_y+ 2.0, pos_z}, o_radius/2);  // Initial obstacle
+
 
         // Define a 3D state space
         auto space = std::make_shared<ompl::base::RealVectorStateSpace>(3);
@@ -302,19 +346,20 @@ int main(int argc, char **argv)
         //current_pos_att
         
         double rotation_angle = 20.0 * cos(0.2 * 0.0);  // Rotation amount
-     if (count<2){
-        for (int i = 0; i <= num_points; ++i)
-        {
-            double angle = 3 * M_PI_2 * i / num_points;  // Three-quarters of a circle from 0 to 3π/2
+     
+     //if (count<2){
+     //   for (int i = 0; i <= num_points; ++i)
+     //   {
+      //      double angle = 3 * M_PI_2 * i / num_points;  // Three-quarters of a circle from 0 to 3π/2
 
             // Rotation about z-axis
-            auto *state = si->allocState()->as<ompl::base::RealVectorStateSpace::StateType>();
-            state->values[0] = radius * cos(angle) * cos(rotation_angle) - radius * sin(angle) * sin(rotation_angle);  // x-coordinate
-            state->values[1] = radius * cos(angle) * sin(rotation_angle) + radius * sin(angle) * cos(rotation_angle);  // y-coordinate
-            state->values[2] = 0;  // z-coordinate (keeping it flat)
-            path1.append(state);
-        }
-     }
+      //      auto *state = si->allocState()->as<ompl::base::RealVectorStateSpace::StateType>();
+      //      state->values[0] = radius * cos(angle) * cos(rotation_angle) - radius * sin(angle) * sin(rotation_angle);  // x-coordinate
+      //      state->values[1] = radius * cos(angle) * sin(rotation_angle) + radius * sin(angle) * cos(rotation_angle);  // y-coordinate
+      //      state->values[2] = 0;  // z-coordinate (keeping it flat)
+      //      path1.append(state);
+       // }
+    // }
         
         //path.clear();  // Clear the existing path
        si->setStateValidityChecker(isStateValid);
@@ -324,13 +369,13 @@ int main(int argc, char **argv)
         si->setup();
 
         // Define a geometric path in the space (Semi-Circular Path)
-        //path(si);
+       // path(si);
 
-        //auto *state = si->allocState()->as<ompl::base::RealVectorStateSpace::StateType>();
-       // state->values[0] = current_pos_att[0];  // x-coordinate
-       // state->values[1] = current_pos_att[1];  // y-coordinate
-       // state->values[2] = current_pos_att[2];  // z-coordinate (keeping it flat)
-       // path1.append(state);
+        auto *state = si->allocState()->as<ompl::base::RealVectorStateSpace::StateType>();
+       state->values[0] = current_pos_att[0];  // x-coordinate
+       state->values[1] = current_pos_att[1];  // y-coordinate
+        state->values[2] = current_pos_att[2];  // z-coordinate (keeping it flat)
+        path1.append(state);
 
         // Publish the original path
         //ROS_INFO("Publishing original path...");
@@ -343,14 +388,44 @@ int main(int argc, char **argv)
 
         // Simplify the path using ropeShortcutPath (Optimized Path)
         ompl::geometric::PathSimplifier simplifier(si);
-        double delta = 0.1;                // Step size
-        double equivalenceTolerance = 0.5;  // Equivalence tolerance
+        double delta = 0.5;                // Step size
+        double equivalenceTolerance = 0.01;  // Equivalence tolerance
         //ROS_INFO("Applying ropeShortcutPath...");
         bool improved;
         //if (count<2){
-        path2 = path1;
-        improved = simplifier.ropeShortcutPath(path2, delta, equivalenceTolerance);
-       // }
+        //path2 = path1;
+        improved = simplifier.ropeRRTtether(path1, contactPoints, delta, equivalenceTolerance);
+
+
+/*
+if (contactPoints.empty())
+{
+    std::cout << "  No contact points found." << std::endl;
+}
+else
+{
+    std::cout << "  Number of contact points: " << contactPoints.size()-1 << std::endl;
+    for (size_t idx = 0; idx < contactPoints.size()-1; ++idx)
+    {
+        const auto *contact = contactPoints[idx];
+        if (contact == nullptr)
+        {
+            std::cout << "  Invalid contact point (nullptr) at index " << idx << std::endl;
+            continue;
+        }
+
+        const auto *state = contact->as<ompl::base::RealVectorStateSpace::StateType>();
+        if (state == nullptr)
+        {
+            std::cout << "  Invalid state (nullptr) at index " << idx << std::endl;
+            continue;
+        }
+
+        std::cout << "  Contact Point " << idx << ": (" << state->values[0] << ", " << state->values[1] << ", " << state->values[2] << ")" << std::endl;
+    }
+}
+
+*/
         // Check if the optimized path is valid
         bool pathValid = true;
         for (size_t i = 0; i < path1.getStateCount(); ++i)
@@ -370,8 +445,12 @@ int main(int argc, char **argv)
         ropepathColor.g = 1.0f;  // Green
         ropepathColor.b = 0.0f;  // Blue
         ropepathColor.a = 1.0f;  // Alpha (transparency)
-        publishPath(rope_path_pub, path2, "world", "rope_path", ropepathColor);
+        publishPath(rope_path_pub, path1, "world", "rope_path", ropepathColor);
          
+
+        publishTetherPath(tether_path_pub, path1, "world");
+
+
         if (improved && pathValid)
         {
             ROS_INFO("Path improved with ropeShortcutPath and is valid.");
