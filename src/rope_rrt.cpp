@@ -204,8 +204,8 @@ void publishPath(ros::Publisher &pub, const ompl::geometric::PathGeometric &path
     marker.id = 0;
     marker.type = visualization_msgs::Marker::POINTS;
     marker.action = visualization_msgs::Marker::ADD;
-    marker.scale.x = 0.1;
-    marker.scale.y = 0.1;
+    marker.scale.x = 0.05;
+    marker.scale.y = 0.05;
     marker.color = color;  // Use the provided color
 
     for (size_t i = 0; i < path.getStateCount(); ++i)
@@ -286,7 +286,7 @@ int main(int argc, char **argv)
 
 
 
-    ros::Rate rate(1);
+    ros::Rate rate(10);
    auto space = std::make_shared<ompl::base::RealVectorStateSpace>(3);
         ompl::base::RealVectorBounds bounds(3);
         bounds.setLow(-10);
@@ -329,7 +329,7 @@ int main(int argc, char **argv)
         obstacles[0] = Obstacle(std::vector<double>{pos_x, pos_y, pos_z+0.1}, o_radius);  // Update the first obstacle
 
 
-       obstacles.emplace_back(std::vector<double>{pos_x, pos_y+ 2.0, pos_z}, o_radius/2);  // Initial obstacle
+       obstacles.emplace_back(std::vector<double>{pos_x, pos_y+ 2.0, pos_z}, o_radius/1.2);  // Initial obstacle
 
 
         // Define a 3D state space
@@ -388,44 +388,21 @@ int main(int argc, char **argv)
 
         // Simplify the path using ropeShortcutPath (Optimized Path)
         ompl::geometric::PathSimplifier simplifier(si);
-        double delta = 0.5;                // Step size
-        double equivalenceTolerance = 0.01;  // Equivalence tolerance
+        double delta = 0.1;                // Step size
+        double equivalenceTolerance = 0.001;  // Equivalence tolerance
         //ROS_INFO("Applying ropeShortcutPath...");
-        bool improved;
-        //if (count<2){
-        //path2 = path1;
-        improved = simplifier.ropeRRTtether(path1, contactPoints, delta, equivalenceTolerance);
+       
+
+            // Measure the time taken by the ropeRRTtether method
+        auto start_time = std::chrono::high_resolution_clock::now();
+        bool improved = simplifier.ropeRRTtether(path1, contactPoints, delta, equivalenceTolerance);
+        auto end_time = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> duration = end_time - start_time;
+
+        ROS_INFO("ropeRRTtether took %f seconds", duration.count());
 
 
-/*
-if (contactPoints.empty())
-{
-    std::cout << "  No contact points found." << std::endl;
-}
-else
-{
-    std::cout << "  Number of contact points: " << contactPoints.size()-1 << std::endl;
-    for (size_t idx = 0; idx < contactPoints.size()-1; ++idx)
-    {
-        const auto *contact = contactPoints[idx];
-        if (contact == nullptr)
-        {
-            std::cout << "  Invalid contact point (nullptr) at index " << idx << std::endl;
-            continue;
-        }
 
-        const auto *state = contact->as<ompl::base::RealVectorStateSpace::StateType>();
-        if (state == nullptr)
-        {
-            std::cout << "  Invalid state (nullptr) at index " << idx << std::endl;
-            continue;
-        }
-
-        std::cout << "  Contact Point " << idx << ": (" << state->values[0] << ", " << state->values[1] << ", " << state->values[2] << ")" << std::endl;
-    }
-}
-
-*/
         // Check if the optimized path is valid
         bool pathValid = true;
         for (size_t i = 0; i < path1.getStateCount(); ++i)

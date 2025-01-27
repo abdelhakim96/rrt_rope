@@ -8,6 +8,7 @@ Panels:
         - /Status1
         - /Grid1
         - /Marker1
+        - /Marker1/Status1
         - /rov trajectory1
         - /Marker2
         - /rov odom1
@@ -67,13 +68,13 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
-      Enabled: false
+      Enabled: true
       Marker Topic: /rov_path
       Name: rov trajectory
       Namespaces:
-        {}
+        rov_path: true
       Queue Size: 100
-      Value: false
+      Value: true
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /obstacle
@@ -156,7 +157,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 5.479875087738037
+      Distance: 5.852795600891113
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -164,17 +165,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 0.010599351488053799
-        Y: 0.6932531595230103
-        Z: -0.08572433143854141
+        X: -2.6602559089660645
+        Y: -0.502800703048706
+        Z: -0.19988729059696198
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.5397963523864746
+      Pitch: 1.5697963237762451
       Target Frame: <Fixed Frame>
-      Yaw: 5.459909439086914
+      Yaw: 1.19672429561615
     Saved: ~
 Window Geometry:
   Displays:
