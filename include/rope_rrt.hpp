@@ -37,6 +37,18 @@
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 #include <nav_msgs/Path.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <ompl/base/spaces/SE3StateSpace.h>  // Include SE3StateSpace
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/kdtree/kdtree_flann.h>
+
+#include <publishers.hpp>
+
 
 extern std::vector<double> current_att_quat;
 extern std::vector<double> current_vel_rate;
@@ -45,3 +57,7 @@ extern bool new_data_received;
 extern std::vector<double> current_vel_body;
 extern std::vector<double> angles;
 extern std::vector<double> angles_d;
+
+extern pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
+
+extern pcl::VoxelGrid<pcl::PointXYZ> voxel_grid;

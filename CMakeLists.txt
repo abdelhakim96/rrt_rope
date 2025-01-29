@@ -17,6 +17,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   roslib
+  pcl_ros
+  pcl_conversions
 )
 
 # Manually set OMPL include and library paths
@@ -25,7 +27,9 @@ set(OMPL_LIBRARIES "/usr/local/lib/libompl.so")  # Adjust the path based on your
 
 # Find Eigen3
 find_package(Eigen3 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIRS})
+include_directories(${EIGEN3_INCLUDE_DIRS}
+${PCL_INCLUDE_DIRS}
+)
 
 catkin_package(
   CATKIN_DEPENDS message_runtime
@@ -39,12 +43,13 @@ include_directories(
 )
 
 # Add the rope_rrt executable
-add_executable(rope_rrt src/rope_rrt.cpp)
+add_executable(rope_rrt src/rope_rrt.cpp src/publishers.cpp)
 
 # Link necessary libraries for rope_rrt
 target_link_libraries(rope_rrt
   ${OMPL_LIBRARIES}  # Link OMPL library
   ${catkin_LIBRARIES}  # Link ROS libraries
+  ${PCL_LIBRARIES}
 )
 
 # Install targets
