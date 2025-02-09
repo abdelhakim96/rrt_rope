@@ -27,6 +27,8 @@ set(OMPL_LIBRARIES "/usr/local/lib/libompl.so")  # Adjust the path based on your
 
 # Find Eigen3
 find_package(Eigen3 REQUIRED)
+find_package(fcl REQUIRED)
+
 include_directories(${EIGEN3_INCLUDE_DIRS}
 ${PCL_INCLUDE_DIRS}
 )
@@ -41,15 +43,23 @@ include_directories(
   ${OMPL_INCLUDE_DIRS}  # OMPL headers
   ${PROJECT_SOURCE_DIR}/include
 )
+include_directories(${FCL_INCLUDE_DIRS})
 
 # Add the rope_rrt executable
-add_executable(rope_rrt src/rope_rrt.cpp src/publishers.cpp)
+add_executable(rope_rrt src/rope_rrt.cpp 
+               src/publishers.cpp 
+              src/helper_functions.cpp
+              src/global_vars.cpp 
+               src/my_motion_validator.cpp
+               src/tether_planner.cpp)
 
 # Link necessary libraries for rope_rrt
 target_link_libraries(rope_rrt
-  ${OMPL_LIBRARIES}  # Link OMPL library
-  ${catkin_LIBRARIES}  # Link ROS libraries
+  ${OMPL_LIBRARIES}
+  ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
+  ${fcl_LIBRARIES}  # Add FCL
+  
 )
 
 # Install targets

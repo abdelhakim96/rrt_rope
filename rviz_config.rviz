@@ -14,6 +14,11 @@ Panels:
         - /goal_pub1
         - /Path1
         - /PointCloud21
+        - /Marker3
+        - /Marker4
+        - /trajectory1
+        - /Pose1
+        - /MarkerArray1
       Splitter Ratio: 0.5
     Tree Height: 696
   - Class: rviz/Selection
@@ -108,13 +113,13 @@ Visualization Manager:
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
-      Color: 25; 255; 0
+      Color: 198; 198; 0
       Enabled: true
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
-      Line Style: Lines
-      Line Width: 0.029999999329447746
+      Line Style: Billboards
+      Line Width: 0.05000000074505806
       Name: Path
       Offset:
         X: 0
@@ -129,7 +134,7 @@ Visualization Manager:
       Topic: /rope_rrt_tether_path
       Unreliable: false
       Value: true
-    - Alpha: 0.20000000298023224
+    - Alpha: 0.05000000074505806
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
         Max Value: 10
@@ -138,7 +143,7 @@ Visualization Manager:
       Axis: Z
       Channel Name: intensity
       Class: rviz/PointCloud2
-      Color: 0; 0; 0
+      Color: 255; 255; 255
       Color Transformer: FlatColor
       Decay Time: 0
       Enabled: true
@@ -151,11 +156,59 @@ Visualization Manager:
       Selectable: true
       Size (Pixels): 3
       Size (m): 0.10000000149011612
-      Style: Squares
+      Style: Boxes
       Topic: /voxel_grid
-      Unreliable: false
+      Unreliable: true
       Use Fixed Frame: true
       Use rainbow: true
+      Value: true
+    - Class: rviz/Marker
+      Enabled: false
+      Marker Topic: /safe_path
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Class: rviz/Marker
+      Enabled: false
+      Marker Topic: /direct_optimal_path
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Class: rviz/Marker
+      Enabled: false
+      Marker Topic: /inspection_reference_trajectory
+      Name: trajectory
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Alpha: 1
+      Axes Length: 1
+      Axes Radius: 0.10000000149011612
+      Class: rviz/Pose
+      Color: 85; 255; 0
+      Enabled: true
+      Head Length: 0.20000000298023224
+      Head Radius: 0.10000000149011612
+      Name: Pose
+      Queue Size: 10
+      Shaft Length: 0.20000000298023224
+      Shaft Radius: 0.20000000298023224
+      Shape: Arrow
+      Topic: /ropeplanner_goal
+      Unreliable: false
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /cylinders
+      Name: MarkerArray
+      Namespaces:
+        cylinders: true
+      Queue Size: 100
       Value: true
   Enabled: true
   Global Options:
@@ -185,7 +238,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 9.80002212524414
+      Distance: 28.35917091369629
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -193,17 +246,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: -6.124149322509766
-        Y: -1.2651208639144897
-        Z: 2.254967212677002
+        X: 2.4050042629241943
+        Y: 2.3873612880706787
+        Z: 1.1803655624389648
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.8897964954376221
+      Pitch: 0.20479699969291687
       Target Frame: <Fixed Frame>
-      Yaw: 4.754451274871826
+      Yaw: 1.6426550149917603
     Saved: ~
 Window Geometry:
   Displays:
