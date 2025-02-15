@@ -19,6 +19,8 @@ Panels:
         - /trajectory1
         - /Pose1
         - /MarkerArray1
+        - /MarkerArray2
+        - /Path2
       Splitter Ratio: 0.5
     Tree Height: 696
   - Class: rviz/Selection
@@ -77,7 +79,7 @@ Visualization Manager:
       Marker Topic: /rov_path
       Name: rov trajectory
       Namespaces:
-        rov_path: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -210,6 +212,38 @@ Visualization Manager:
         cylinders: true
       Queue Size: 100
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /exit_points
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Alpha: 1
+      Buffer Length: 1
+      Class: rviz/Path
+      Color: 6; 106; 255
+      Enabled: true
+      Head Diameter: 0.30000001192092896
+      Head Length: 0.20000000298023224
+      Length: 0.30000001192092896
+      Line Style: Billboards
+      Line Width: 0.029999999329447746
+      Name: Path
+      Offset:
+        X: 0
+        Y: 0
+        Z: 0
+      Pose Color: 255; 85; 255
+      Pose Style: None
+      Queue Size: 10
+      Radius: 0.029999999329447746
+      Shaft Diameter: 0.10000000149011612
+      Shaft Length: 0.10000000149011612
+      Topic: /planner_path
+      Unreliable: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -238,7 +272,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 28.35917091369629
+      Distance: 9.907322883605957
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -254,9 +288,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.20479699969291687
+      Pitch: -0.035203803330659866
       Target Frame: <Fixed Frame>
-      Yaw: 1.6426550149917603
+      Yaw: 3.892652750015259
     Saved: ~
 Window Geometry:
   Displays:
@@ -274,5 +308,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1908
-  X: 1888
-  Y: 64
+  X: -32
+  Y: -32

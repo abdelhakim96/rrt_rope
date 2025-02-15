@@ -41,4 +41,8 @@ void publishTrajectory(const ros::Publisher &publisher, const std::vector<std::v
 
 
 void publishRef(const ros::Publisher &publisher, const std::vector<double> &point);
+
+
+void publishExitPoints(const std::vector<std::vector<double>>& exit_points, ros::Publisher& publisher);
+
 #endif // PUBLISHERS_H

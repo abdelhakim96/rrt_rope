@@ -78,12 +78,12 @@
 #include <helper_functions.hpp>
 #include <pcl/filters/voxel_grid.h>
 
-
+#include <ompl/util/Console.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-
+#include <visualization_msgs/MarkerArray.h>
 
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>

@@ -41,7 +41,7 @@ bool isStateValid(const ompl::base::State *state)
     {
         if (isPointInsideCylinder(robot_position, cylinder))
         {
-            ROS_WARN("Collision detected with cylinder.");
+           // ROS_WARN("Collision detected with cylinder.");
             return false; // Collision detected with cylinder
         }
     }
@@ -55,7 +55,7 @@ bool isStateValid(const ompl::base::State *state)
 bool isPointInsideCylinder(const Eigen::Vector3f& point, const cylinder_obs& cylinder)
 {
     // Print the base center of the cylinder
-    std::cout << "Cylinder Base Center: " << cylinder.baseCenter.transpose() << std::endl;
+    //std::cout << "Cylinder Base Center: " << cylinder.baseCenter.transpose() << std::endl;
 
     // Compute the vector from the base center to the point
     Eigen::Vector3f baseToPoint;
@@ -64,7 +64,7 @@ bool isPointInsideCylinder(const Eigen::Vector3f& point, const cylinder_obs& cyl
     baseToPoint.z() = point.z() + cylinder.baseCenter.z();
 
     // Print the baseToPoint
-    std::cout << "Base to Point: " << baseToPoint.transpose() << std::endl;
+    //std::cout << "Base to Point: " << baseToPoint.transpose() << std::endl;
 
     // Normalize the axis of the cylinder
     Eigen::Vector3f axis = cylinder.axis.normalized();
@@ -83,7 +83,7 @@ bool isPointInsideCylinder(const Eigen::Vector3f& point, const cylinder_obs& cyl
     }
 
     // Print the projection length
-    std::cout << "Projection Length: " << projectionLength << std::endl;
+    //std::cout << "Projection Length: " << projectionLength << std::endl;
 
     // Check if the projection is within the cylinder's height range
     if (projectionLength < 0 || projectionLength > cylinder.height)
@@ -95,7 +95,7 @@ bool isPointInsideCylinder(const Eigen::Vector3f& point, const cylinder_obs& cyl
     Eigen::Vector3f closestPointOnAxis = cylinder.baseCenter + projectionLength * axis;
 
     // Print the closest point on the axis
-    std::cout << "Closest Point on Axis: " << closestPointOnAxis.transpose() << std::endl;
+    //std::cout << "Closest Point on Axis: " << closestPointOnAxis.transpose() << std::endl;
 
     // Compute the radial distance based on the cylinder's axis
     float radialDistance;
@@ -111,13 +111,13 @@ bool isPointInsideCylinder(const Eigen::Vector3f& point, const cylinder_obs& cyl
     }
 
     // Print the radial distance
-    std::cout << "Radial Distance: " << radialDistance << std::endl;
+    //std::cout << "Radial Distance: " << radialDistance << std::endl;
 
     // Check if the point is within the cylinder's radius
     bool isInside = radialDistance <= cylinder.radius;
 
     // Print the result
-    std::cout << "Is Inside: " << isInside << std::endl;
+    //std::cout << "Is Inside: " << isInside << std::endl;
 
     return isInside;
 }

@@ -1,14 +1,6 @@
 #include <rope_rrt.hpp>
  
-// Structure to represent an obstacle as a sphere
- 
-
- 
- 
-
-
-// Helper function to check if a point is inside a cylinder with an arbitrary axis
-
+std::vector<double> way_point = {0.0, 0.0, 0.0, 0.0};  // Initialize with four elements
 
 
 int main(int argc, char **argv)
@@ -19,7 +11,8 @@ int main(int argc, char **argv)
     ros::Time ros_time;
     ros::Time last_time = ros::Time::now();  // Track the last time position was updated
  
- 
+    ompl::msg::setLogLevel(ompl::msg::LOG_NONE);
+
     int count = 0;
     // Create publishers to visualize the original and optimized paths, and obstacles
     ros::Publisher rov_path_pub = nh.advertise<visualization_msgs::Marker>("rov_path", 10);
@@ -27,6 +20,7 @@ int main(int argc, char **argv)
     ros::Publisher obstacle_pub = nh.advertise<visualization_msgs::Marker>("obstacle", 10);
  
     ros::Publisher tether_path_pub = nh.advertise<nav_msgs::Path>("rope_rrt_tether_path", 10);
+    ros::Publisher planner_path_pub = nh.advertise<nav_msgs::Path>("planner_path", 10);
     ros::Publisher direct_path_pub = nh.advertise<visualization_msgs::Marker>("direct_optimal_path", 10);  
     ros::Publisher safe_path_pub = nh.advertise<visualization_msgs::Marker>("safe_path", 10);
  
@@ -39,11 +33,13 @@ int main(int argc, char **argv)
     ros::Publisher ref_pub = nh.advertise<geometry_msgs::PoseStamped>("/ropeplanner_goal", 10);
      ros::Publisher cylinder_pub = nh.advertise<visualization_msgs::MarkerArray>("cylinders", 10);
 
+
+    ros::Publisher exit_points_pub = nh.advertise<visualization_msgs::MarkerArray>("exit_points", 1);
  
     //subscribers
     ros::Subscriber pos_sub = nh.subscribe<nav_msgs::Odometry>("/mobula/rov/odometry", 1, pos_cb);
     ros::Subscriber orientation_sub = nh.subscribe<geometry_msgs::Vector3Stamped>("/mobula/rov/orientation", 1, orientation_cb);
-    ros::Subscriber goal_point_sub = nh.subscribe<geometry_msgs::PointStamped>("goal_point_pub", 10, goal_cb);
+    //ros::Subscriber goal_point_sub = nh.subscribe<geometry_msgs::PointStamped>("goal_point_pub", 10, goal_cb);
  
  
     // Define obstacles (center and radius)
@@ -56,15 +52,15 @@ int main(int argc, char **argv)
     cylinder_obs cylinder2;
     cylinder2.baseCenter = Eigen::Vector3f(1.7, 1.0, -1.5);
     cylinder2.axis = Eigen::Vector3f(1.0, -0.0, 0.01); // Assuming the cylinder is aligned with the z-axis
-    cylinder2.radius = 0.8;
+    cylinder2.radius = 0.5;
     cylinder2.height = 6.0;
     cylinders.push_back(cylinder2);
     
     
     cylinder_obs cylinder1;
-    cylinder1.baseCenter = Eigen::Vector3f(5.5, 1.0, 1.0);
+    cylinder1.baseCenter = Eigen::Vector3f(5.2, 1.0, 2.0);
     cylinder1.axis = Eigen::Vector3f(0.0, 0.0, 1.0); // Assuming the cylinder is aligned with the z-axis
-    cylinder1.radius = 0.7;
+    cylinder1.radius = 0.5;
     cylinder1.height = 7.0;
     cylinders.push_back(cylinder1);
 
@@ -152,7 +148,7 @@ int main(int argc, char **argv)
         ompl::geometric::PathGeometric iP_t_conc_P_bg(si);  // Reverse tether path concatenated with Path from base to Goal
         //define contact points
         std::vector<ompl::base::State *> contactPoints;
-       
+        contactPoints.reserve(2000);
         // Define the base position
         std::vector<double> base = {0.0, 0.0, 0.0};
  
@@ -196,7 +192,7 @@ int main(int argc, char **argv)
 
 
 
-
+   TetherPlanner planner; // Create an instance of the TetherPlanner class
 
  
     while (ros::ok())
@@ -261,7 +257,7 @@ int main(int argc, char **argv)
  
         // Simplify the path using ropeShortcutPath (Optimized Path)
         ompl::geometric::PathSimplifier simplifier(si);
-        double delta = 1.0;                // Step size
+        double delta = 0.2;                // Step size
         double equivalenceTolerance = 0.000001;  // Equivalence tolerance
        
         // Measure the time taken by the ropeRRTtether method
@@ -285,105 +281,56 @@ int main(int argc, char **argv)
         }
        
          
-        // calculate P_bg
+      
+      double L_max =0.01;
+      std::vector<double> rov_pos = { current_pos_att[0],  current_pos_att[1],  current_pos_att[2]};
+      
+      //ompl::geometric::PathGeometric Path_replan = planner.findNextGoal(P_t, rov_pos, goal, L_max, space, si);
+
+       //std::vector<std::vector<double>> exit_points = planner.exit_points_list_;
        
+
+       //PlANNER
+       L_max = 1.0;
+       ompl::geometric::PathGeometric Path_sample(si);
        
-        // Check if goal has been updated
-        //////////////////
-        //Path Planner
-        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////        ////////////////////
+       if (planner.findTetherLength(P_t) > L_max)
+       {
+          // ROS_INFO("Number of states in P_t: %zu", P_t.getStateCount());
+          // ROS_INFO("Calculating the alternative path...");
        
-        /*
+           // Calculate the alternative path
+           //
+           //ompl::geometric::PathGeometric Path_sample = planner.CalculateAlternativePath_i(10, P_t, goal, si);
        
-        if (goal_updated(goal, goal_t1, 0.01))
-        {  
-            std::cout<<"goal updated"<<std::endl;
-            ompl::base::ScopedState<ompl::base::RealVectorStateSpace> state_goal(space);
- 
-        // Reset the paths
-            P_rg.clear();
-            P_bg.clear();
-            iP_t_conc_P_bg.clear();
-            rope_P_t_conc_P_rg.clear();
-            P_t_conc_P_rg.clear();
- 
-            state_goal->values[0] = goal[0];  // x-coordinate
-            state_goal->values[1] = goal[1];  // y-coordinate
-            state_goal->values[2] = goal[2];  // z-coordinate
- 
-            ompl::base::ScopedState<ompl::base::RealVectorStateSpace> state_rov_scoped(space);
-            state_rov_scoped->values[0] = current_pos_att[0];  // x-coordinate
-            state_rov_scoped->values[1] = current_pos_att[1];  // y-coordinate
-            state_rov_scoped->values[2] = current_pos_att[2];  // z-coordinate
- 
-            ompl::base::ScopedState<ompl::base::RealVectorStateSpace> state_base_scoped(space);
-            state_base_scoped->values[0] = base[0];  // x-coordinate
-            state_base_scoped->values[1] = base[1];  // y-coordinate
-            state_base_scoped->values[2] = base[2];  // z-coordinate
- 
-            // Calculate the path from the base to the goal using RRT*
-            ompl::geometric::SimpleSetup ss_rg(si);
-            ss_rg.setStartAndGoalStates(state_rov_scoped, state_goal);
-            auto planner_rg = std::make_shared<ompl::geometric::RRTstar>(si);
-            ss_rg.setPlanner(planner_rg);
- 
-            // Solve the planning problem
-            ompl::base::PlannerStatus solved_rg = ss_rg.solve(ompl::base::timedPlannerTerminationCondition(1.0));
- 
-            // Calculate the path from the base to the goal using RRT*
-            ompl::geometric::SimpleSetup ss_bg(si);
-            ss_bg.setStartAndGoalStates(state_base_scoped, state_goal);
-            auto planner_bg = std::make_shared<ompl::geometric::RRTstar>(si);
-            ss_bg.setPlanner(planner_bg);
- 
-            // Solve the planning problem for P_bg
-            ompl::base::PlannerStatus solved_bg = ss_bg.solve(ompl::base::timedPlannerTerminationCondition(1.0));
- 
-            if (solved_rg && solved_bg)
-            {
-                // Get the solution paths
-                P_rg = ss_rg.getSolutionPath();
-                P_bg = ss_bg.getSolutionPath();
- 
-                // Optionally, simplify the solution paths
-                ss_rg.simplifySolution();
-                P_rg = ss_rg.getSolutionPath();
- 
-                ss_bg.simplifySolution();
-                P_bg = ss_bg.getSolutionPath();
- 
-                // Concatenate P_t with P_rg
-                ompl::geometric::PathGeometric P_t_conc_P_rg = P_t;
-                P_t_conc_P_rg.append(P_rg);
-                ompl::geometric::PathGeometric rope_P_t_conc_P_rg = P_t_conc_P_rg;
-                bool improved_P_t_conc_P_rg = simplifier.ropeRRTtether(rope_P_t_conc_P_rg, contactPoints, delta, equivalenceTolerance);
- 
-                // Concatenate iP_t with P_bg
-                iP_t_conc_P_bg = iP_t;
-                iP_t_conc_P_bg.append(P_bg);
-                ompl::geometric::PathGeometric rope_iP_t_conc_P_bg = iP_t_conc_P_bg;
-                bool improved_iP_t_conc_P_bg = simplifier.ropeRRTtether(rope_iP_t_conc_P_bg, contactPoints, delta, equivalenceTolerance);
-            }
-            else
-            {
-                if (!solved_rg)
-                {
-                    std::cout << "No solution found for P_rg." << std::endl;
-                }
-                if (!solved_bg)
-                {
-                    std::cout << "No solution found for P_bg." << std::endl;
-                }
-            }
-        }
-        */
+            
+           Path_sample = planner.SearchAlternativePath(P_t, way_point, si , L_max); 
+
+          // ROS_INFO("Alternative path calculated. Number of states in Path_sample: %zu", Path_sample.getStateCount());
        
-        //ROS_INFO("ropeRRTtether took %f seconds", duration.count());
- 
- 
- 
- 
- 
+           // Print the states in the alternative path
+           for (std::size_t i = 0; i < Path_sample.getStateCount(); ++i)
+           {
+               const auto *state = Path_sample.getState(i)->as<ompl::base::RealVectorStateSpace::StateType>();
+              //ROS_INFO("State %zu: [x: %f, y: %f, z: %f]", i, state->values[0], state->values[1], state->values[2]);
+           }
+       
+          // publishPath(rov_path_pub, Path_sample, "world", "rov_path", rovpathColor);
+           publishTetherPath(planner_path_pub, Path_sample, "world", rovpathColor);
+
+       }
+    
+    //std_msgs::ColorRGBA ropepathColor;
+    //ropepathColor.r = 0.6f;  // Red
+    //ropepathColor.g = 0.6f;  // Green
+    //ropepathColor.b = 0.0f;  // Blue
+    //ropepathColor.a = 1.0f;  // Alpha (transparency)
+
+
+
+
+      //publishExitPoints(exit_points, exit_points_pub);
+
  
       if ((ros::Time::now() - last_time) >= ros::Duration(0.5))  // 0.1 second passed
             {  
@@ -444,7 +391,7 @@ int main(int argc, char **argv)
         publishVoxelGrid(voxel_grid_pub, filtered_cloud);
         publishPath(rope_path_pub, P_t, "world", "rope_path", ropepathColor);
        
-        publishPath(rov_path_pub, P_t, "world", "rov_path", rovpathColor);
+        //publishPath(rov_path_pub, P_t, "world", "rov_path", rovpathColor);
  
         if (P_rg.getStateCount() > 0)
         {
@@ -483,12 +430,12 @@ int main(int argc, char **argv)
  
         publishTetherPath(tether_path_pub, P_t, "world", tetherColor);
  
-        publishTetherPath(direct_path_pub, P_rg, "world",  direct_path);
-        publishTetherPath(safe_path_pub, iP_t_conc_P_bg, "world", safe_path);
+        //publishTetherPath(direct_path_pub, P_rg, "world",  direct_path);
+        //publishTetherPath(safe_path_pub, iP_t_conc_P_bg, "world", safe_path);
        
         publishTrajectory(trajectory_pub, way_point_traj);
        
-        std::vector<double> way_point = {0.0, 0.0, 0.0, 0.0};  // Initialize with four elements
+        way_point = {0.0, 0.0, 0.0, 0.0};  // Initialize with four elements
  
         if (count > 0 && count < way_point_traj.size()) {
             way_point = way_point_traj[count];
@@ -497,8 +444,8 @@ int main(int argc, char **argv)
         if (distance(way_point, current_pos_att) < 0.05 && count < way_point_traj.size() - 1) {
  
             // if (count == 0) {
-        ROS_INFO("Current position and attitude when count is 0: [x: %f, y: %f, z: %f, yaw: %f]",
-                 current_pos_att[0], current_pos_att[1], current_pos_att[2], current_pos_att[3]);
+       // ROS_INFO("Current position and attitude when count is 0: [x: %f, y: %f, z: %f, yaw: %f]",
+          //       current_pos_att[0], current_pos_att[1], current_pos_att[2], current_pos_att[3]);
     //}
             count++;
         }

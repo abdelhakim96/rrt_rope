@@ -78,7 +78,7 @@ void publishTrajectory(const ros::Publisher &publisher, const std::vector<std::v
 
     // Publish the markers
     publisher.publish(marker);
-    ROS_INFO("Published trajectory as markers");
+    //ROS_INFO("Published trajectory as markers");
 }
 
 
@@ -214,5 +214,43 @@ void publishRef(const ros::Publisher &publisher, const std::vector<double> &poin
     pose_msg.pose.orientation.w = q.w();
 
     publisher.publish(pose_msg);
-    ROS_INFO("Published pose: [%f, %f, %f, %f]", point[0], point[1], point[2], point[3]);
+   // ROS_INFO("Published pose: [%f, %f, %f, %f]", point[0], point[1], point[2], point[3]);
+}
+
+
+
+
+void publishExitPoints(const std::vector<std::vector<double>>& exit_points, ros::Publisher& publisher)
+{
+    visualization_msgs::MarkerArray marker_array;
+    int id = 0;
+
+    for (const auto& point : exit_points)
+    {
+        visualization_msgs::Marker marker;
+        marker.header.frame_id = "world"; // Set the frame ID
+        marker.header.stamp = ros::Time::now();
+        marker.ns = "exit_points";
+        marker.id = id++;
+        marker.type = visualization_msgs::Marker::SPHERE;
+        marker.action = visualization_msgs::Marker::ADD;
+        marker.pose.position.x = point[0];
+        marker.pose.position.y = point[1];
+        marker.pose.position.z = point[2];
+        marker.pose.orientation.x = 0.0;
+        marker.pose.orientation.y = 0.0;
+        marker.pose.orientation.z = 0.0;
+        marker.pose.orientation.w = 1.0;
+        marker.scale.x = 0.15; // Set the scale of the marker
+        marker.scale.y = 0.15;
+        marker.scale.z = 0.15;
+        marker.color.a = 1.0; // Set the alpha value
+        marker.color.r = 1.0; // Set the color (red)
+        marker.color.g = 0.0;
+        marker.color.b = 0.0;
+
+        marker_array.markers.push_back(marker);
+    }
+
+    publisher.publish(marker_array);
 }
