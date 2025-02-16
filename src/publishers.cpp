@@ -1,6 +1,55 @@
 #include "publishers.hpp"
 
 
+void publishBlueRovMarker(ros::Publisher& rov_path_pub, const std::vector<double>& current_pos_att, const std::vector<double>& current_angles, const std::string& frame_id) {
+    if (current_pos_att.size() < 3 || current_angles.size() < 3) {
+        ROS_WARN("Invalid input: Position and angles must have at least 3 values (x, y, z) and (roll, pitch, yaw)");
+        return;
+    }
+
+    visualization_msgs::Marker marker;
+
+    marker.header.frame_id = frame_id;
+    marker.header.stamp = ros::Time::now();
+    marker.ns = "blue_rov";
+    marker.id = 0;
+    marker.type = visualization_msgs::Marker::MESH_RESOURCE;
+    //marker.type = visualization_msgs::Marker::SPHERE;
+    marker.action = visualization_msgs::Marker::ADD;
+
+    // Set position from current_pos_att
+    marker.pose.position.x = current_pos_att[0];
+    marker.pose.position.y = current_pos_att[1];
+    marker.pose.position.z = current_pos_att[2];
+
+    // Convert roll, pitch, yaw to quaternion
+    tf2::Quaternion q;
+    q.setRPY(current_angles[0], current_angles[1], current_angles[2]);
+    marker.pose.orientation.x = q.x();
+    marker.pose.orientation.y = q.y();
+    marker.pose.orientation.z = q.z();
+    marker.pose.orientation.w = q.w();
+
+    // Set scale
+    marker.scale.x = 0.02;
+    marker.scale.y = 0.02;
+    marker.scale.z = 0.02;
+
+    // Set color (optional)
+    marker.color.r = 0.0;
+    marker.color.g = 0.5;
+    marker.color.b = 1.0;
+    marker.color.a = 1.0; // Fully visible
+
+    // Mesh file path
+    marker.mesh_resource = "package://rope_rrt/models/simplify_saab.stl";
+   // marker.mesh_resource = "https://raw.githubusercontent.com/gundam-global-challenge/gundam_robot/master/gundam_rx78_description/meshes/rx78_object_005-lib.dae";
+  //  marker.mesh_resource = "https://github.com/patrickelectric/bluerov_ros_playground/blob/master/model/BlueRov2/meshes/BlueRov2.stl";
+
+    // Publish the marker
+    rov_path_pub.publish(marker);
+}
+
 
 void publishCylinders(ros::Publisher &publisher, const std::vector<cylinder_obs> &cylinders, const std::string &frame_id)
 {
@@ -16,7 +65,7 @@ void publishCylinders(ros::Publisher &publisher, const std::vector<cylinder_obs>
         marker.action = visualization_msgs::Marker::ADD;
         marker.pose.position.x = cylinders[i].baseCenter.x();
         marker.pose.position.y = cylinders[i].baseCenter.y();
-        marker.pose.position.z = cylinders[i].baseCenter.z() + cylinders[i].height / 2.0;
+        marker.pose.position.z = -cylinders[i].baseCenter.z();
 
         // Calculate the quaternion for the cylinder's orientation
         Eigen::Vector3f z_axis(0.0, 0.0, 1.0);
@@ -31,8 +80,8 @@ void publishCylinders(ros::Publisher &publisher, const std::vector<cylinder_obs>
         marker.scale.y = cylinders[i].radius * 2.0;
         marker.scale.z = cylinders[i].height;
         marker.color.r = 1.0;
-        marker.color.g = 0.0;
-        marker.color.b = 0.0;
+        marker.color.g = 1.0;
+        marker.color.b = 1.0;
         marker.color.a = 0.4;
         marker_array.markers.push_back(marker);
     }

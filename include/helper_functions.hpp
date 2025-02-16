@@ -34,7 +34,25 @@
 
 #include "global_vars.hpp"
 #include "my_motion_validator.hpp" 
+#include <yaml-cpp/yaml.h>
+#include <std_msgs/ColorRGBA.h>
+#include <std_msgs/Bool.h>
+ #include <filesystem>
+ #include <rosbag/bag.h>
+#include <rosbag/view.h>
+#include <ros/message_event.h>
+#include <ros/message.h>
 
+#include <rosbag/bag.h>
+#include <rosbag/view.h>
+#include <std_msgs/String.h>
+#include <sensor_msgs/PointCloud2.h>
+#include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Vector3Stamped.h>
+#include <nav_msgs/Path.h>
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
+#include <geometry_msgs/PoseStamped.h>
 
 
 extern std::vector<double> current_att_quat;
@@ -56,6 +74,9 @@ void vel_cb(const geometry_msgs::TwistStamped::ConstPtr &msg);
 void orientation_cb(const geometry_msgs::Vector3Stamped::ConstPtr &msg);
 //void goal_cb(const geometry_msgs::PoseStamped::ConstPtr &msg);
 void goal_cb(const geometry_msgs::PointStamped::ConstPtr& msg);
+
+void reset_tether_cb(const std_msgs::Bool::ConstPtr& msg);
+void record_trajectory_on_cb(const std_msgs::Bool::ConstPtr& msg);
 
 
 bool goal_updated(const std::vector<double> &vec1, const std::vector<double> &vec2, double threshold_distance);
@@ -93,8 +114,17 @@ void initializeVoxelGridAndKdTree(const pcl::PointCloud<pcl::PointXYZ>::Ptr& clo
 void transformPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, float scale_factor, const Eigen::Vector3f& translation, const Eigen::Matrix3f& rotation);
 
 
+void saveTrajectoryData(const ros::Time &ros_time, 
+    const std::vector<double> &rov_pos, 
+    const std::vector<double> &angles, 
+    const ompl::geometric::PathGeometric &tether, 
+    bool record_trajectory);
 
 
+void initializeTrajectoryFilename();
+void recordRosbag(const std::string &bag_filename, const std::vector<std::string> &topics, ros::Duration duration);
+
+//std_msgs::ColorRGBA loadColorFromYAML(const std::string &file_name, const std::string &color_name);
 
 
 

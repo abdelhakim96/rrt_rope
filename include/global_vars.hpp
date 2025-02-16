@@ -5,6 +5,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
+#include <std_msgs/Bool.h>
 
 #include <pcl/surface/poisson.h>
 #include <pcl/filters/voxel_grid.h>
@@ -19,6 +20,7 @@
 #include <pcl/filters/filter.h>
 #include <pcl/surface/mls.h>
 #include <pcl/visualization/pcl_visualizer.h>
+#include <std_msgs/ColorRGBA.h>  // Include the correct header
 
 
 
@@ -41,3 +43,30 @@ extern pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
 extern bool voxel_grid_initialized;
 extern pcl::VoxelGrid<pcl::PointXYZ> voxel_grid;
 extern pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+
+
+//params
+
+extern double time_step;
+
+//tether
+extern double L_max;
+
+
+// Define the colors
+extern std_msgs::ColorRGBA tetherColor;
+extern std_msgs::ColorRGBA directPath;
+extern std_msgs::ColorRGBA safePath;
+extern std_msgs::ColorRGBA ropepathColor;
+extern std_msgs::ColorRGBA rovpathColor;
+
+
+
+extern std::chrono::duration<double> time_tether_model_computation;
+
+
+
+extern bool reset_tether;
+extern bool record_trajectory;
+extern std::string trajectory_filename;
+extern bool inspection_done;

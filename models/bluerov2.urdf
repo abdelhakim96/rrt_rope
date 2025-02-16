@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<robot name="BlueROV2">
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <mesh filename="package://your_package/models/BlueRov2.stl" scale="1 1 1"/>
+            </geometry>
+            <material name="blue">
+                <color rgba="0 0 1 1"/>
+            </material>
+        </visual>
+    </link>
+</robot>

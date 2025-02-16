@@ -15,6 +15,8 @@ std::vector<double> goal_t1(3, 0.0);
 
 
 
+
+
 bool isStateValid(const ompl::base::State *state)
 {
     // Cast the state to RealVectorStateSpace::StateType
@@ -49,6 +51,20 @@ bool isStateValid(const ompl::base::State *state)
     // ROS_INFO("State is valid.");
     return true; // No collision
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -145,6 +161,15 @@ bool goal_updated(const std::vector<double> &vec1, const std::vector<double> &ve
 }
 
 
+
+void reset_tether_cb(const std_msgs::Bool::ConstPtr& msg) {
+    reset_tether = msg->data;  // Assign the data from the message to the boolean
+
+}
+
+void record_trajectory_on_cb(const std_msgs::Bool::ConstPtr& msg) {
+    record_trajectory = msg->data;  // Assign the data from the message to the boolean
+}
 
 
 
@@ -416,3 +441,108 @@ void transformPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, float scale
         point.z = p.z() + translation.z();
     }
 }
+
+
+
+//Data Collection Functions
+void initializeTrajectoryFilename()
+{
+    // Directory to save the files
+    std::string directory = "/home/hakim/tether_planning_ws/src/rope_rrt/results/";
+
+    // Ensure the directory exists
+    std::filesystem::create_directories(directory);
+
+    // Find the highest numbered file in the directory
+    int max_number = 0;
+    for (const auto &entry : std::filesystem::directory_iterator(directory))
+    {
+        std::string filename = entry.path().filename().string();
+        if (filename.find("trajectory_results_") == 0 && filename.find(".txt") != std::string::npos)
+        {
+            int number = std::stoi(filename.substr(18, filename.size() - 22));
+            if (number > max_number)
+            {
+                max_number = number;
+            }
+        }
+    }
+
+    // Generate a new filename with an incremented number
+    std::ostringstream filename;
+    filename << directory << "trajectory_results_" << (max_number + 1) << ".txt";
+    trajectory_filename = filename.str();
+}
+
+void saveTrajectoryData(const ros::Time &ros_time, 
+                      const std::vector<double> &rov_pos, 
+                      const std::vector<double> &angles, 
+                      const ompl::geometric::PathGeometric &tether, 
+                      bool record_trajectory)
+{
+    if (!record_trajectory)
+    {
+        return;
+    }
+
+    // Open the file for writing
+    std::ofstream file(trajectory_filename);
+    if (!file.is_open())
+    {
+        ROS_ERROR("Failed to open file: %s", trajectory_filename.c_str());
+        return;
+    }
+
+    // Write the header
+    file << "ros_time, rov_pos_x, rov_pos_y, rov_pos_z, yaw, pitch, roll, tether_x, tether_y, tether_z\n";
+
+    // Write the data row by row
+    for (std::size_t i = 0; i < tether.getStateCount(); ++i)
+    {
+        const auto *state = tether.getState(i)->as<ompl::base::RealVectorStateSpace::StateType>();
+        file << std::fixed << std::setprecision(6)
+             << ros_time.toSec() << ", "
+             << rov_pos[0] << ", " << rov_pos[1] << ", " << rov_pos[2] << ", "
+             << angles[0] << ", " << angles[1] << ", " << angles[2] << ", "
+             << state->values[0] << ", " << state->values[1] << ", " << state->values[2] << "\n";
+    }
+
+    // Close the file
+    file.close();
+    ROS_INFO("Trajectory data saved to file: %s", trajectory_filename.c_str());
+}
+
+
+
+/*
+void recordRosbag(const std::string &bag_filename, const std::vector<std::string> &topics, ros::Duration duration)
+{
+    rosbag::Bag bag;
+    bag.open(bag_filename, rosbag::bagmode::Write);
+
+    ros::NodeHandle nh;
+    std::vector<ros::Subscriber> subscribers;
+
+    auto callback = [&bag](const ros::MessageEvent<ros::Message const> &event) {
+        const std::string &topic = event.getConnectionHeader()["topic"];
+        const ros::Time &time = event.getReceiptTime();
+        const boost::shared_ptr<ros::Message const> &msg = event.getMessage();
+        bag.write(topic, time, msg);
+    };
+
+    for (const auto &topic : topics)
+    {
+        subscribers.push_back(nh.subscribe(topic, 1000, callback));
+    }
+
+    ros::Time start_time = ros::Time::now();
+    while (ros::ok() && (ros::Time::now() - start_time) < duration)
+    {
+        ros::spinOnce();
+    }
+
+    bag.close();
+    ROS_INFO("Rosbag recording saved to %s", bag_filename.c_str());
+}
+
+*/

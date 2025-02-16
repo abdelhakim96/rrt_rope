@@ -45,4 +45,7 @@ void publishRef(const ros::Publisher &publisher, const std::vector<double> &poin
 
 void publishExitPoints(const std::vector<std::vector<double>>& exit_points, ros::Publisher& publisher);
 
+
+void publishBlueRovMarker(ros::Publisher& rov_path_pub, const std::vector<double>& current_pos_att, const std::vector<double>& current_angles, const std::string& frame_id);
+
 #endif // PUBLISHERS_H

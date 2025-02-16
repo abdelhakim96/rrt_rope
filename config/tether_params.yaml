@@ -1,0 +1,41 @@
+tether:
+  delta: 0.1
+  tolerance: 50.0
+  collision_threshold: 0.1
+  L_max: 10.0
+
+
+
+tether_color:
+  r: 1.0  # Red
+  g: 0.0  # Green
+  b: 0.0  # Blue
+  a: 1.0  # Alpha (transparency)
+
+direct_path_color:
+  r: 1.0  # Red
+  g: 0.0  # Green
+  b: 0.0  # Blue
+  a: 1.0  # Alpha (transparency)
+
+safe_path_color:
+  r: 0.0  # Red
+  g: 0.0  # Green
+  b: 1.0  # Blue
+  a: 1.0  # Alpha (transparency)
+
+
+ropepath_color:
+  r: 0.6  # Red
+  g: 0.6  # Green
+  b: 0.0  # Blue
+  a: 1.0  # Alpha (transparency)
+
+
+
+
+rovpath_color:
+  r: 0.8  # Red
+  g: 0.8  # Green
+  b: 0.0  # Blue
+  a: 1.0  # Alpha (transparency)

@@ -46,7 +46,7 @@ include_directories(
 include_directories(${FCL_INCLUDE_DIRS})
 
 # Add the rope_rrt executable
-add_executable(rope_rrt src/rope_rrt.cpp 
+add_executable(tether_planner_node src/tether_planner_main.cpp 
                src/publishers.cpp 
               src/helper_functions.cpp
               src/global_vars.cpp 
@@ -54,7 +54,7 @@ add_executable(rope_rrt src/rope_rrt.cpp
                src/tether_planner.cpp)
 
 # Link necessary libraries for rope_rrt
-target_link_libraries(rope_rrt
+target_link_libraries(tether_planner_node
   ${OMPL_LIBRARIES}
   ${catkin_LIBRARIES}
   ${PCL_LIBRARIES}
@@ -64,6 +64,6 @@ target_link_libraries(rope_rrt
 
 # Install targets
 install(TARGETS
-  rope_rrt
+ tether_planner_node
   DESTINATION lib/${PROJECT_NAME}
 )

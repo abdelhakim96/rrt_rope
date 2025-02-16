@@ -1,0 +1,4 @@
+simulation:
+  time_step: 0.02
+  vehicle_mass: 50.0
+  drag_coefficient: 0.3

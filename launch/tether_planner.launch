@@ -1,0 +1,9 @@
+<launch>
+    <!-- Launch the rope_rrt node -->
+    <node name="tether_planner_node" pkg="rope_rrt" type="tether_planner_node" output="screen">
+        <!-- Parameters for the node (if any) can be added here -->
+        <!-- <param name="parameter_name" value="value"/> -->
+    </node>
+    <rosparam file="$(find rope_rrt)/config/simulation_params.yaml" command="load"/>
+
+</launch>
