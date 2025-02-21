@@ -1,8 +1,9 @@
 tether:
-  delta: 0.1
-  tolerance: 50.0
+  delta: 0.2
+  eq_tolerance: 0.00001
   collision_threshold: 0.1
-  L_max: 10.0
+  L_max: 5.0
+
 
 
 

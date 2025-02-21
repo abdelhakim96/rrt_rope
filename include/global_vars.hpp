@@ -35,6 +35,8 @@ struct cylinder_obs
 
 // List of cylinders
 extern std::vector<cylinder_obs> cylinders;
+extern std::vector<cylinder_obs> cylinders_safe;
+
 
 // Declare the cloud variable
 extern pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
@@ -59,7 +61,7 @@ extern std_msgs::ColorRGBA directPath;
 extern std_msgs::ColorRGBA safePath;
 extern std_msgs::ColorRGBA ropepathColor;
 extern std_msgs::ColorRGBA rovpathColor;
-
+extern std_msgs::ColorRGBA safepathColor;
 
 
 extern std::chrono::duration<double> time_tether_model_computation;
@@ -70,3 +72,23 @@ extern bool reset_tether;
 extern bool record_trajectory;
 extern std::string trajectory_filename;
 extern bool inspection_done;
+extern bool TA_Planner_ON;
+
+extern double delta ;                // Step size
+extern double equivalenceTolerance;  // Equivalence tolerance
+
+extern bool goal_reached;
+
+
+extern bool Tether_Length_exceeded;
+
+//planner params
+extern double safe_offset;
+
+
+
+extern std::vector<double> way_point;
+
+
+
+extern int count ;

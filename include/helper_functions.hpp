@@ -25,6 +25,10 @@
 #include <ompl/geometric/PathGeometric.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 
+
+#include <cassert>
+#include <cstdlib> // For rand()
+
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl/io/pcd_io.h>
@@ -53,6 +57,7 @@
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <fstream>
 
 
 extern std::vector<double> current_att_quat;
@@ -105,7 +110,7 @@ bool isPointInsideCylinder(const Eigen::Vector3f& point, const cylinder_obs& cyl
 
 bool isStateValid(const ompl::base::State *state);
 
-
+bool isStateValid_safe(const ompl::base::State *state);
 
 void densifyPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr &cloud);
 
@@ -114,11 +119,11 @@ void initializeVoxelGridAndKdTree(const pcl::PointCloud<pcl::PointXYZ>::Ptr& clo
 void transformPointCloud(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, float scale_factor, const Eigen::Vector3f& translation, const Eigen::Matrix3f& rotation);
 
 
-void saveTrajectoryData(const ros::Time &ros_time, 
-    const std::vector<double> &rov_pos, 
-    const std::vector<double> &angles, 
-    const ompl::geometric::PathGeometric &tether, 
-    bool record_trajectory);
+//void saveTrajectoryData(const ros::Time &ros_time, 
+//    const std::vector<double> &rov_pos, 
+//    const std::vector<double> &angles, 
+//    const ompl::geometric::PathGeometric &tether, 
+//    bool record_trajectory);
 
 
 void initializeTrajectoryFilename();
@@ -128,6 +133,25 @@ void recordRosbag(const std::string &bag_filename, const std::vector<std::string
 
 
 
+std::vector<double> crossProduct(const std::vector<double> &v1, const std::vector<double> &v2);
 
+std::vector<double> normalize(const std::vector<double> &v);
+
+
+std::vector<double> findPlaneNormal(const std::vector<double>& v1, const std::vector<double>& v2);
+
+
+std::vector<double> findPerpendicularLineDirection(const std::vector<double>& v1,
+                                                   const std::vector<double>& a) ;
+
+
+
+std::vector<std::vector<double>> sampleAtDistance(const std::vector<double>& start, 
+                           const std::vector<double>& direction, double delta);                                       
+
+void saveTetherPathData(const ros::Time &ros_time, const ompl::geometric::PathGeometric &tether);
+
+
+void saveTrajectory(const ros::Time &ros_time, const std::vector<double> &rov_pos);
 
 #endif // HELPER_FUNCTIONS_HPP

@@ -17,6 +17,11 @@ std::vector<double> goal_t1(3, 0.0);
 
 
 
+
+
+
+
+
 bool isStateValid(const ompl::base::State *state)
 {
     // Cast the state to RealVectorStateSpace::StateType
@@ -54,8 +59,50 @@ bool isStateValid(const ompl::base::State *state)
 
 
 
+bool isStateValid_safe(const ompl::base::State *state)
+{
+    // Cast the state to RealVectorStateSpace::StateType
+    const auto *realState = state->as<ompl::base::RealVectorStateSpace::StateType>();
+    if (!realState)
+    {
+        // ROS_ERROR("State is not of type RealVectorStateSpace::StateType.");
+        return false;
+    }
+
+    // Access the position values
+    double x = realState->values[0];
+    double y = realState->values[1];
+    double z = realState->values[2];
+
+    // Convert position to Eigen vector
+    Eigen::Vector3f robot_position(x, y, z);
+
+    // Print the robot's position
+    // ROS_INFO("Checking state at position: [%f, %f, %f]", x, y, z);
+
+    // Check if the robot's position is inside any cylinder in cylinders_safe
+    for (const auto& cylinder : cylinders_safe)
+    {
+        if (isPointInsideCylinder(robot_position, cylinder))
+        {
+           // ROS_WARN("Collision detected with cylinder.");
+            return false; // Collision detected with cylinder
+        }
+    }
+
+    // ROS_INFO("State is valid.");
+    return true; // No collision
+}
 
 
+
+std::vector<double> findPlaneNormal(const std::vector<double>& v1, const std::vector<double>& v2) {
+    return crossProduct(v1, v2);
+}
+
+std::vector<double> findPerpendicularLineDirection(const std::vector<double>& v1, const std::vector<double>& a) {
+    return crossProduct(v1, a); // Direction of the line
+}
 
 
 
@@ -511,6 +558,125 @@ void saveTrajectoryData(const ros::Time &ros_time,
     file.close();
     ROS_INFO("Trajectory data saved to file: %s", trajectory_filename.c_str());
 }
+
+
+
+
+
+
+
+
+
+
+std::vector<double> crossProduct(const std::vector<double> &v1, const std::vector<double> &v2)
+{
+    std::vector<double> cross(3);
+    cross[0] = v1[1] * v2[2] - v1[2] * v2[1];
+    cross[1] = v1[2] * v2[0] - v1[0] * v2[2];
+    cross[2] = v1[0] * v2[1] - v1[1] * v2[0];
+    return cross;
+}
+
+// Function to normalize a vector
+std::vector<double> normalize(const std::vector<double> &v)
+{
+    double norm = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    std::vector<double> unit_vector(3);
+    unit_vector[0] = v[0] / norm;
+    unit_vector[1] = v[1] / norm;
+    unit_vector[2] = v[2] / norm;
+    return unit_vector;
+}
+
+
+std::vector<std::vector<double>> sampleAtDistance(const std::vector<double>& start, const std::vector<double>& direction, double delta) {
+    std::vector<double> posSample = {
+        start[0] + delta * direction[0],
+        start[1] + delta * direction[1],
+        start[2] + delta * direction[2]
+    };
+    
+    std::vector<double> negSample = {
+        start[0] - delta * direction[0],
+        start[1] - delta * direction[1],
+        start[2] - delta * direction[2]
+    };
+    
+    return {posSample, negSample}; // Return both the positive and negative samples
+}
+
+
+// Function to compute the desired vector
+// Function to compute the perpendicular unit vector using v1 and v2
+
+
+
+
+void saveTrajectory(const ros::Time &ros_time, const std::vector<double> &rov_pos)
+{
+    // Ensure the results directory exists
+    std::filesystem::create_directories("results");
+
+    // Open the file in append mode
+    std::ofstream file("results/rov_position.txt", std::ios::app);
+
+    if (file.is_open())
+    {
+        // Write the time and position data to the file
+        file << std::fixed << std::setprecision(6)
+             << ros_time.toSec() << ", "
+             << rov_pos[0] << ", "
+             << rov_pos[1] << ", "
+             << rov_pos[2] << std::endl;
+
+        file.close();
+    }
+    else
+    {
+        ROS_ERROR("Unable to open file for writing ROV position data.");
+    }
+}
+
+
+
+
+void saveTetherPathData(const ros::Time &ros_time, const ompl::geometric::PathGeometric &tether)
+{
+    // Ensure the results directory exists
+    std::filesystem::create_directories("results");
+
+    // Open the file in append mode
+    std::ofstream file("results/tether_path.txt", std::ios::app);
+
+    if (file.is_open())
+    {
+        // Write the time to the file
+        file << std::fixed << std::setprecision(6) << ros_time.toSec() << std::endl;
+
+        // Write the tether path data to the file
+        for (std::size_t i = 0; i < tether.getStateCount(); ++i)
+        {
+            const auto *state = tether.getState(i)->as<ompl::base::RealVectorStateSpace::StateType>();
+            file << std::fixed << std::setprecision(6)
+                 << state->values[0] << ", "
+                 << state->values[1] << ", "
+                 << state->values[2] << std::endl;
+        }
+
+        file.close();
+    }
+    else
+    {
+        ROS_ERROR("Unable to open file for writing tether path data.");
+    }
+}
+
+
+
+
+
+
+
 
 
 

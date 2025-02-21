@@ -242,10 +242,12 @@ void publishPath(ros::Publisher &pub, const ompl::geometric::PathGeometric &path
 
 
 void publishRef(const ros::Publisher &publisher, const std::vector<double> &point) {
-    if (point.size() < 4) {
-        ROS_ERROR("Point must contain at least 4 elements: [x, y, z, yaw]");
-        return;
-    }
+   
+
+    //if (point.size() < 4) {
+    //    point.push_back(0.0);  // Add yaw of zero
+    //}
+
 
     geometry_msgs::PoseStamped pose_msg;
     pose_msg.header.frame_id = "world";  // Set the reference frame
@@ -256,7 +258,7 @@ void publishRef(const ros::Publisher &publisher, const std::vector<double> &poin
 
     // Convert yaw to quaternion
     tf2::Quaternion q;
-    q.setRPY(0, 0, point[3]);  // Roll and pitch are 0, yaw is point[3]
+    q.setRPY(0, 0, 0.0);  // Roll and pitch are 0, yaw is point[3]
     pose_msg.pose.orientation.x = q.x();
     pose_msg.pose.orientation.y = q.y();
     pose_msg.pose.orientation.z = q.z();

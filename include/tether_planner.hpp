@@ -14,7 +14,11 @@
 #include <Eigen/Dense>
 #include <memory>
 #include <vector>
-
+#include <ompl/base/SpaceInformation.h>
+#include <ompl/base/ScopedState.h>
+#include <ompl/geometric/PathSimplifier.h>
+#include <ompl/geometric/PathGeometric.h>
+#include <ompl/base/spaces/RealVectorStateSpace.h>
 
 //implement tether planner class
 
@@ -31,17 +35,18 @@ class TetherPlanner
 {
     
     public:
-        TetherPlanner(); // Constructor declaration
+       // TetherPlanner( ); // Constructor declaration
+        TetherPlanner(double delta, double equivalenceTolerance); // Constructor declaration
 
         std::vector<std::vector<double>> exit_points_list_; // list of potential exit points for replanning
 
 
-        double delta_ = 0.1;                // Step size
-        double equivalenceTolerance_ = 0.000001;  // Equivalence tolerance
+        double delta_;                // Step size
+        double equivalenceTolerance_;  // Equivalence tolerance
         double Alternative_Path_Tether_Length = 100000;
 
         double Direct_Path_Tether_Length = 100000;
-
+         
         ompl::geometric::PathGeometric findNextGoal(const ompl::geometric::PathGeometric &tether , 
                                         const std::vector<double> &current_position, 
                                         const std::vector<double> &goal, 
@@ -116,7 +121,40 @@ ompl::geometric::PathGeometric computePathSegment2(const ompl::geometric::PathGe
   const std::shared_ptr<ompl::base::SpaceInformation> &si);
 
 
+  std::vector<double> GetNextPointAlongPath( const ompl::geometric::PathGeometric &path,  
+                                                       const std::vector<double> current_position,
+                                             const std::vector<double> goal,
+                                             const std::shared_ptr<ompl::base::SpaceInformation> &si );
+
+
+
+
+std::vector<double> MoveGoalToSafeZone(const std::vector<double> &node_n1, 
+const std::vector<double> &node_n2, 
+const std::vector<double> &node_n3, 
+double delta_safe);
+  
+  
+  
+std::vector<double> computePerpendicularUnitVector(const std::vector<double> &v1, const std::vector<double> &v2);
+
+  
+
+std::vector<double> SearchRandomDirection();
+  
+  
+ompl::geometric::PathGeometric OffsetPath(const ompl::geometric::PathGeometric &path, 
+           const std::shared_ptr<ompl::base::SpaceInformation> &si, double delta_safe);
+  
+                                     
+          
 };
+
+
+
+void saveTrajectory(const ros::Time &ros_time, const std::vector<double> &rov_pos);
+
+
 
 
 

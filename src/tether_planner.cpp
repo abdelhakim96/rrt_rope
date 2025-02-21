@@ -6,12 +6,30 @@
 #include <vector>
 
 
-
+/*
 TetherPlanner::TetherPlanner()
 {
    //Constructor
    std::cout<<"Tether Planner Initialized"<<std::endl;  
 
+}
+*/
+
+TetherPlanner::TetherPlanner(double delta, double equivalenceTolerance)
+    : delta_(delta), equivalenceTolerance_(equivalenceTolerance)
+{
+    std::cout<<"Tether Planner Initialized"<<std::endl;  
+}
+
+
+
+std::vector<double> TetherPlanner::SearchRandomDirection()
+{
+    std::vector<double> direction(3);
+    direction[0] = static_cast<double>(rand()) / RAND_MAX * 2.0 - 1.0;
+    direction[1] = static_cast<double>(rand()) / RAND_MAX * 2.0 - 1.0;
+    direction[2] = static_cast<double>(rand()) / RAND_MAX * 2.0 - 1.0;
+    return normalize(direction);
 }
 
 
@@ -499,32 +517,39 @@ ompl::geometric::PathGeometric TetherPlanner::SearchAlternativePath(ompl::geomet
     const std::shared_ptr<ompl::base::SpaceInformation> &si,
     const double L_max)
 {
-ompl::geometric::PathGeometric Alternative_Path(si);
-bool short_cut = false;
-for (int i = 2; i < tether.getStateCount(); i++)
+    ompl::geometric::PathGeometric Alternative_Path(si);
+    bool short_cut = false;
 
+    for (int i = 2; i < tether.getStateCount(); i++)
     {  
         Alternative_Path = CalculateAlternativePath_i(i, tether, goal, si);
 
         if (Alternative_Path_Tether_Length < L_max)
         {   
-        
-        ROS_INFO("Found alternative path with length: %f at node number: %d", Alternative_Path_Tether_Length, i);
-        short_cut = true;
-        break;
+            ROS_INFO("Found alternative path with length: %f at node number: %d", Alternative_Path_Tether_Length, i);
+            short_cut = true;
+            break;
         }
     }
 
-if (short_cut = false)
+    if (!short_cut)
     {
-        ROS_WARN("No alternative path found within the tether length constraint. Returning path with single endpoint of tether.");
+        ROS_WARN("No alternative path found within the tether length constraint. Adding goal point to the path.");
         const auto *end_state = tether.getState(tether.getStateCount() - 1)->as<ompl::base::RealVectorStateSpace::StateType>();
         ompl::geometric::PathGeometric single_point_path(si);
         single_point_path.append(end_state);
+
+        // Add the goal point to the path
+        auto *state_goal = si->allocState()->as<ompl::base::RealVectorStateSpace::StateType>();
+        state_goal->values[0] = goal[0];  // x-coordinate
+        state_goal->values[1] = goal[1];  // y-coordinate
+        state_goal->values[2] = goal[2];  // z-coordinate
+        single_point_path.append(state_goal);
+
         return single_point_path;
     }
 
-return Alternative_Path;
+    return Alternative_Path;
 }
 
 
@@ -551,3 +576,173 @@ simplifier.ropeShortcutPath(Path_segment2, delta_, equivalenceTolerance_);
 
 return Path_segment2;
 }
+
+
+
+
+
+std::vector<double> TetherPlanner::computePerpendicularUnitVector(const std::vector<double> &v1, const std::vector<double> &v2)
+{
+    // Compute the cross product of v1 and v2
+    std::vector<double> cross_v1_v2 = crossProduct(v1, v2);
+
+    // Compute the cross product of v1 and cross_v1_v2
+    std::vector<double> perpendicular_vector = crossProduct(v1, cross_v1_v2);
+
+    // Normalize the resulting vector to make it a unit vector
+    std::vector<double> unit_vector = normalize(perpendicular_vector);
+
+    
+
+    return unit_vector;
+}
+
+
+
+
+
+
+
+
+
+std::vector<double> TetherPlanner::MoveGoalToSafeZone(const std::vector<double> &node_n1, 
+    const std::vector<double> &node_n2, 
+    const std::vector<double> &node_n3, 
+    double delta_safe)
+{
+// Compute the vectors (n1 - n2) and (n3 - n2)
+std::vector<double> v1 = {node_n1[0] - node_n2[0], node_n1[1] - node_n2[1], node_n1[2] - node_n2[2]};
+std::vector<double> v2 = {node_n3[0] - node_n2[0], node_n3[1] - node_n2[1], node_n3[2] - node_n2[2]};
+
+// Compute the unit vector that is perpendicular to (n1 - n2) and also perpendicular to the cross product of the two vectors
+std::vector<double> unit_vector = computePerpendicularUnitVector(v1, v2);
+
+// Move the goal by delta_safe in the direction of the computed unit vector
+std::vector<double> new_goal = {node_n2[0] + delta_safe * unit_vector[0], 
+ node_n2[1] + delta_safe * unit_vector[1], 
+ node_n2[2] + delta_safe * unit_vector[2]};
+
+return new_goal;
+}
+
+
+
+
+
+
+std::vector<double> TetherPlanner::GetNextPointAlongPath(const ompl::geometric::PathGeometric &path, 
+                                                        const std::vector<double> current_position,
+                                                        const std::vector<double> goal,
+                                                        const std::shared_ptr<ompl::base::SpaceInformation> &si)
+   {
+    
+        std::vector<double> next_goal = {0.0, 0.0, 0.0};
+        std::vector<double> node_n1 = {0.0, 0.0, 0.0};
+        std::vector<double> node_n2 = {0.0, 0.0, 0.0};
+        std::vector<double> node_n3 = {0.0, 0.0, 0.0};
+        int n = 5;
+        double delta_safe = 1.0;
+
+        if (path.getStateCount() > n)
+        {
+        const auto *state = path.getState(n)->as<ompl::base::RealVectorStateSpace::StateType>();
+
+        next_goal[0] = state->values[0];
+        next_goal[1] = state->values[1];
+        next_goal[2] = state->values[2];
+        }
+        else
+        {
+        next_goal = goal;
+        }
+
+        // Check if next_goal is valid
+        ompl::base::ScopedState<ompl::base::RealVectorStateSpace> state_next_goal(si->getStateSpace());
+        state_next_goal->values[0] = next_goal[0];
+        state_next_goal->values[1] = next_goal[1];
+        state_next_goal->values[2] = next_goal[2];
+
+        if (!si->isValid(state_next_goal.get()))
+        {
+        ROS_WARN("Next goal is not valid. Perturbing goal state to find a valid state.");
+
+        const auto *state_n1 = path.getState(n)->as<ompl::base::RealVectorStateSpace::StateType>();
+        const auto *state_n2 = path.getState(n + 1)->as<ompl::base::RealVectorStateSpace::StateType>();
+        const auto *state_n3 = path.getState(n + 2)->as<ompl::base::RealVectorStateSpace::StateType>();
+
+        node_n1[0] = state_n1->values[0];
+        node_n1[1] = state_n1->values[1];
+        node_n1[2] = state_n1->values[2];
+
+        node_n2[0] = state_n2->values[0];
+        node_n2[1] = state_n2->values[1];
+        node_n2[2] = state_n2->values[2];
+
+        node_n3[0] = state_n3->values[0];
+        node_n3[1] = state_n3->values[1];
+        node_n3[2] = state_n3->values[2];
+
+        // Move the goal to a safe zone
+        next_goal = MoveGoalToSafeZone(node_n1, node_n2, node_n3, delta_safe);
+
+        // Update state_next_goal with the new next_goal
+        state_next_goal->values[0] = next_goal[0];
+        state_next_goal->values[1] = next_goal[1];
+        state_next_goal->values[2] = next_goal[2];
+
+        }
+
+        return next_goal;
+    }
+
+
+
+
+
+
+
+
+
+    ompl::geometric::PathGeometric TetherPlanner::OffsetPath(const ompl::geometric::PathGeometric &path, const std::shared_ptr<ompl::base::SpaceInformation> &si, double delta_safe)
+    {
+        ompl::geometric::PathGeometric offset_path(si);
+    
+        for (std::size_t i = 0; i < 10; ++i)
+        {
+            const auto *state = path.getState(i)->as<ompl::base::RealVectorStateSpace::StateType>();
+            std::vector<double> node = {state->values[0], state->values[1], state->values[2]};
+    
+            bool found_valid_direction = false;
+            while (!found_valid_direction)
+            {
+                std::vector<double> direction = SearchRandomDirection();
+
+                std::vector<double> new_node = {node[0] + delta_safe * direction[0], node[1] + delta_safe * direction[1], node[2] + delta_safe * direction[2]};
+                
+                if (i==0)
+                {
+                    new_node = {node[0], node[1], node[2]};
+
+
+                }
+                ompl::base::ScopedState<ompl::base::RealVectorStateSpace> state_new(si->getStateSpace());
+                state_new->values[0] = new_node[0];
+                state_new->values[1] = new_node[1];
+                state_new->values[2] = new_node[2];
+    
+                if (si->isValid(state_new.get()))
+                {
+                    found_valid_direction = true;
+                    node = new_node;
+                }
+            }
+    
+            ompl::base::ScopedState<ompl::base::RealVectorStateSpace> state_offset(si->getStateSpace());
+            state_offset->values[0] = node[0];
+            state_offset->values[1] = node[1];
+            state_offset->values[2] = node[2];
+            offset_path.append(state_offset.get()); // Use .get() to get the underlying state pointer
+        }
+    
+        return offset_path;
+    }

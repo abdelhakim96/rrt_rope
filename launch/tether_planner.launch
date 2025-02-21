@@ -5,5 +5,7 @@
         <!-- <param name="parameter_name" value="value"/> -->
     </node>
     <rosparam file="$(find rope_rrt)/config/simulation_params.yaml" command="load"/>
+    <rosparam file="$(find rope_rrt)/config/tether_params.yaml" command="load"/>
+    <rosparam file="$(find rope_rrt)/config/planner_params.yaml" command="load"/>
 
 </launch>
