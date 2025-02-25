@@ -20,6 +20,13 @@
 #include <ompl/geometric/PathGeometric.h>
 #include <ompl/base/spaces/RealVectorStateSpace.h>
 
+// Include nvblox headers
+//#include <nvblox/core/volume.h> // Adjust the path based on your nvblox installation
+//#include <nvblox/core/utils.h>   // Include other relevant nvblox headers as needed
+
+
+
+
 //implement tether planner class
 
 // input 
@@ -132,8 +139,8 @@ ompl::geometric::PathGeometric computePathSegment2(const ompl::geometric::PathGe
 std::vector<double> MoveGoalToSafeZone(const std::vector<double> &node_n1, 
 const std::vector<double> &node_n2, 
 const std::vector<double> &node_n3, 
-double delta_safe);
-  
+double delta_safe, const std::shared_ptr<ompl::base::SpaceInformation> &si);
+ 
   
   
 std::vector<double> computePerpendicularUnitVector(const std::vector<double> &v1, const std::vector<double> &v2);
@@ -152,7 +159,6 @@ ompl::geometric::PathGeometric OffsetPath(const ompl::geometric::PathGeometric &
 
 
 
-void saveTrajectory(const ros::Time &ros_time, const std::vector<double> &rov_pos);
 
 
 

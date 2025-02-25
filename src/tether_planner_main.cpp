@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     ros::Publisher rov_path_pub = nh.advertise<visualization_msgs::Marker>("rov_path", 10);
     ros::Publisher rope_path_pub = nh.advertise<visualization_msgs::Marker>("rope_path", 10);
     ros::Publisher obstacle_pub = nh.advertise<visualization_msgs::Marker>("obstacle", 10);
-    ros::Publisher tether_path_pub = nh.advertise<nav_msgs::Path>("rope_rrt_tether_path", 10);
+    ros::Publisher tether_path_pub = nh.advertise<nav_msgs::Path>("`_path", 10);
     ros::Publisher planner_path_pub = nh.advertise<nav_msgs::Path>("planner_path", 10);
     ros::Publisher safe_planner_path_pub = nh.advertise<nav_msgs::Path>("safe_planner_path", 10);
     ros::Publisher direct_path_pub = nh.advertise<visualization_msgs::Marker>("direct_optimal_path", 10);
@@ -96,19 +96,19 @@ int main(int argc, char **argv)
     
     
     cylinder_obs cylinder2_safe = cylinder2;
-    cylinder2_safe.radius += 0.0; // Inflate the radius by 0.3
+    cylinder2_safe.radius += 0.5; // Inflate the radius by 0.3
     cylinders_safe.push_back(cylinder2_safe);
     
     cylinder_obs cylinder1_safe = cylinder1;
-    cylinder1_safe.radius += 0.0; // Inflate the radius by 0.3
+    cylinder1_safe.radius += 0.5; // Inflate the radius by 0.3
     cylinders_safe.push_back(cylinder1_safe);
 
 
+   
 
-
-   //pcl
+    //pcl
      float scale_factor = 0.1; // Scale down by 10 times (0.2 * 0.5)
-        Eigen::Vector3f translation(2.0, 1.0, -4.0); // Move closer to the origin
+     Eigen::Vector3f translation(2.0, 1.0, -4.0); // Move closer to the origin
        
        
         //Eigen::Vector3f translation(2.0, 1.0, 1.0); // Move closer to the origin
@@ -343,21 +343,15 @@ int main(int argc, char **argv)
        double Tether_length = planner.findTetherLength(P_t);
        ROS_INFO("Tether length is %f",Tether_length );
 
-       //if (Tether_length > L_max )   
-      // {
-         //Tether_Length_exceeded = true;
-          // ROS_INFO("Number of states in P_t: %zu", P_t.getStateCount());
-         // ROS_INFO("Tether length is greater than the maximum length. L_max = %f, replanning", L_max);
+      
            Path_sample = planner.SearchAlternativePath(P_t, way_point, si_t , L_max); 
            
           
           
-          // ompl::geometric::PathGeometric safe_path = planner.OffsetPath(Path_sample , si_t, safe_offset); 
-          // ompl::geometric::PathSimplifier simplify_safe(si);
-           
-         // bool simplify_safe_path = simplify_safe.ropeRRTtether(safe_path , contactPoints, delta, equivalenceTolerance);
+           //ompl::geometric::PathGeometric safe_path = planner.OffsetPath(Path_sample , si, safe_offset); 
+           //ompl::geometric::PathSimplifier simplify_safe(si);
+           //bool simplify_safe_path = simplify_safe.ropeRRTtether(safe_path , contactPoints, delta, equivalenceTolerance);
 
-          // bool simplify_safe_path = simplify_safe.ropeShortcutPath(safe_path , delta, equivalenceTolerance);
 
 
            // Print the states in the alternative path
@@ -366,27 +360,15 @@ int main(int argc, char **argv)
                const auto *state = Path_sample.getState(i)->as<ompl::base::RealVectorStateSpace::StateType>();
               //ROS_INFO("State %zu: [x: %f, y: %f, z: %f]", i, state->values[0], state->values[1], state->values[2]);
            }
-          // publishPath(rov_path_pub, Path_sample, "world", "rov_path", rovpathColor);
-           publishTetherPath(planner_path_pub, Path_sample, "world", rovpathColor);
-           //publishTetherPath(safe_planner_path_pub, safe_path, "world", safepathColor);
+
  
            if (TA_Planner_ON == true)
            {
              ROS_INFO("Taking Aternative path");
-            
-             //if(  Tether_Length_exceeded = true){
-        
                 ROS_INFO("Getting next point along alternative path");
                 // way_point = planner.GetNextPointAlongPath(Path_sample,current_pos_att, way_point,si);
-                // way_point = planner.GetNextPointAlongPath(safe_path,current_pos_att, way_point,si);
-                 
-                 ROS_INFO("New waypoint: [x: %f, y: %f, z: %f]", way_point[0], way_point[1], way_point[2]);
-            // }
-                  //}
-             way_point = planner.GetNextPointAlongPath(Path_sample,current_pos_att, way_point,si);
-             ROS_INFO("New waypoint: [x: %f, y: %f, z: %f]", way_point[0], way_point[1], way_point[2]);
-              
-
+                // way_point = planner.GetNextPointAlongPath(safe_path,current_pos_att, way_point,si);                 
+                //way_point = planner.GetNextPointAlongPath(Path_sample,current_pos_att, way_point,si);
             // Print the entire path
             ROS_INFO("Alternative Path:");
             for (std::size_t i = 0; i < Path_sample.getStateCount(); ++i)
@@ -397,24 +379,12 @@ int main(int argc, char **argv)
 
            }
        //}
-       goal_reached = false;
-       ROS_INFO("Max tether Length %f", L_max);
-
- 
-      if ((ros::Time::now() - last_time) >= ros::Duration(0.5))  // 0.1 second passed
-            {  
-                goal_t1 = goal;  // Store the position 0.1 seconds before
-                last_time = ros::Time::now();  // Update the last time to the current time
-            }  
- 
-
-        
-
-        
-        
        
-           
-        // Publish the obstacles
+    
+
+        //////////    
+        // Publish 
+        //////////
         //publishObstacles(obstacle_pub, obstacles, "world");
         publishPointCloud(point_cloud_pub, cloud);
         publishVoxelGrid(voxel_grid_pub, filtered_cloud);
@@ -424,7 +394,8 @@ int main(int argc, char **argv)
         publishRef(ref_pub, way_point);
         publishCylinders(cylinder_pub, cylinders, "world");
         publishBlueRovMarker(blue_rov_pub, current_pos_att, angles, "world");
-
+        publishTetherPath(planner_path_pub, Path_sample, "world", rovpathColor);
+        //publishTetherPath(safe_planner_path_pub, safe_path, "world", safepathColor);
 
 
 

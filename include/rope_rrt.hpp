@@ -6,6 +6,7 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/Wrench.h>
 #include <geometry_msgs/PointStamped.h>
+#include <glog/logging.h>
 
 #include <geometry_msgs/Vector3Stamped.h>
 #include <nav_msgs/Odometry.h>
@@ -25,14 +26,13 @@
 #include <fstream>
 
 
-#include <fcl/fcl.h>
-
-#include <fcl/geometry/shape/shape_base-inl.h>
+//#include <fcl/fcl.h>
+//#include <fcl/geometry/shape/convex.h>
+//#include <fcl/geometry/shape/shape_base-inl.h>
 
 #include <ompl/base/SpaceInformation.h>
 #include <ompl/geometric/SimpleSetup.h>
 #include <ompl/base/spaces/SE3StateSpace.h>
-#include <fcl/geometry/shape/convex.h>
 
 
 #include <ompl/base/SpaceInformation.h>
@@ -44,7 +44,6 @@
 
 #include <ompl/geometric/SimpleSetup.h>
 
-#include <fcl/fcl.h>
 //#include <fcl/geometry/shape/mesh.h>
 
 
@@ -99,6 +98,10 @@
 #include <my_motion_validator.hpp>
 
 #include "tether_planner.hpp"
+
+
+//NVBLOX
+#include "nvblox/core/types.h"
 
 
 

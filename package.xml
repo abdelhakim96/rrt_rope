@@ -15,7 +15,11 @@
   <!-- Build tool dependencies -->
   <buildtool_depend>catkin</buildtool_depend>
 
+
   <!-- Dependencies -->
+
+ <build_depend>glog</build_depend>
+ <exec_depend>glog</exec_depend>
   <depend>roscpp</depend>
   <depend>std_msgs</depend>
   <depend>message_runtime</depend>
